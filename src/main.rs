@@ -6,17 +6,20 @@ use tokio::time::sleep;
 
 use crate::api::start_server;
 use crate::telegram::Telegram;
+use crate::website::Website;
 
 pub mod api;
 pub mod telegram;
+pub mod website;
 
 fn main() {
-    let mut telegramCon = Telegram::new();
+    let telegram_communication = Telegram::new();
+    let mut website_validator = Website::new(telegram_communication.clone());
 
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.spawn(async {
         loop {
-            sleep(Duration::from_secs(1)).await;
+            sleep(Duration::from_secs(4)).await;
             println!("hello");
         }
     });

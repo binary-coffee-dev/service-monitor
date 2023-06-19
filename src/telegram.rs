@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Telegram {
     bot_token: String,
 }
