@@ -927,6 +927,7 @@ name = "service-monitor"
 version = "0.1.0"
 dependencies = [
  "rocket",
+ "tokio",
 ]
 
 [[package]]
@@ -1069,6 +1070,7 @@ dependencies = [
  "libc",
  "mio",
  "num_cpus",
+ "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2",
