@@ -13,3 +13,7 @@ This service is meant to mointoring the BinaryCoffee services and notify on tele
 
 tbd
 
+## todo
+
+- [ ] handle repeated errors in the validation process.
+- [ ] Add help, and support for application arguments.
