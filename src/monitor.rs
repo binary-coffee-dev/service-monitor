@@ -45,13 +45,13 @@ impl Monitor {
         let _result = tokio::join!(telegram_monitor_thread, website_monitor);
     }
 
-    pub async fn run_commands_sync(tel: &Telegram) {
+    async fn run_commands_sync(tel: &Telegram) {
         tel.sync_commands().await;
         let commands = tel.get_commands().await;
         println!("commands: {:?}", commands);
     }
 
-    pub async fn run_telegram_monitor(tel: &Telegram, web: &Website) {
+    async fn run_telegram_monitor(tel: &Telegram, web: &Website) {
         loop {
             let updates = tel.get_all_updates().await;
             if !updates.is_empty() {
@@ -72,6 +72,10 @@ impl Monitor {
                                 println!("command: {}", command_name);
 
                                 match command_name.as_str() {
+                                    "/check_all" | "/check_all@monitor_bc_bot" => {
+                                        Monitor::execute_check_api(tel, web, group_id).await;
+                                        Monitor::execute_check_frontend(tel, web, group_id).await;
+                                    }
                                     "/check_api" | "/check_api@monitor_bc_bot" => {
                                         Monitor::execute_check_api(tel, web, group_id).await;
                                     }
@@ -91,7 +95,7 @@ impl Monitor {
         }
     }
 
-    pub async fn run_website_monitor(tel: &Telegram, web: &Website, timeout: u64) {
+    async fn run_website_monitor(tel: &Telegram, web: &Website, timeout: u64) {
         loop {
             let errors = web.sumary().await;
 

@@ -100,6 +100,11 @@ impl Telegram {
     pub async fn sync_commands(&self) {
         let configs = vec![
             BotCommand {
+                command: "/check_all".to_string(),
+                description: "This command check if the api/frontend are running correctly"
+                    .to_string(),
+            },
+            BotCommand {
                 command: "/check_api".to_string(),
                 description:
                     "This command check if the [api.binarycoffee.dev] api is running correctly"
