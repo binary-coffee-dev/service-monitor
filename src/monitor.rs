@@ -1,5 +1,7 @@
+use std::sync::Arc;
 use std::time::Duration;
 
+use tokio::sync::Mutex;
 use tokio::time::sleep;
 
 use crate::config::Config;
@@ -21,23 +23,32 @@ impl Monitor {
     }
 
     pub async fn start(&self) {
+        let pause = Arc::new(Mutex::new(false));
         let rt = tokio::runtime::Runtime::new().unwrap();
 
         let config_ref_rm = self.configs.clone();
+        let pause_ref_rm = pause.clone();
         let telegram_monitor_thread = rt.spawn(async move {
             let tel = Telegram::new(config_ref_rm.clone());
             let web = Website::new(config_ref_rm.clone());
 
             Monitor::run_commands_sync(&tel).await;
-            Monitor::run_telegram_monitor(&tel, &web).await;
+            Monitor::run_telegram_monitor(&tel, &web, pause_ref_rm).await;
         });
 
         let config_ref_wm = self.configs.clone();
+        let pause_ref_wm = pause.clone();
         let website_monitor = rt.spawn(async move {
             let tel = Telegram::new(config_ref_wm.clone());
             let web = Website::new(config_ref_wm.clone());
 
-            Monitor::run_website_monitor(&tel, &web, config_ref_wm.website_monitor_timeout).await;
+            Monitor::run_website_monitor(
+                &tel,
+                &web,
+                config_ref_wm.website_monitor_timeout,
+                pause_ref_wm,
+            )
+            .await;
         });
 
         // start_server().unwrap();
@@ -51,7 +62,7 @@ impl Monitor {
         println!("commands: {:?}", commands);
     }
 
-    async fn run_telegram_monitor(tel: &Telegram, web: &Website) {
+    async fn run_telegram_monitor(tel: &Telegram, web: &Website, pause: Arc<Mutex<bool>>) {
         loop {
             let updates = tel.get_all_updates().await;
             if !updates.is_empty() {
@@ -71,6 +82,8 @@ impl Monitor {
                                     text.to_string()[offset_beg..offset_end].to_string();
                                 println!("command: {}", command_name);
 
+                                // replace @monitor_bc_bot by a configuration attribute to make it
+                                // modular
                                 match command_name.as_str() {
                                     "/check_all" | "/check_all@monitor_bc_bot" => {
                                         Monitor::execute_check_api(tel, web, group_id).await;
@@ -85,6 +98,16 @@ impl Monitor {
                                     "/check_certs" | "/check_certs@monitor_bc_bot" => {
                                         Monitor::execute_check_certs(tel, web, group_id).await;
                                     }
+                                    "/pause" | "/pause@monitor_bc_bot" => {
+                                        let mut pause_v = pause.lock().await;
+                                        *pause_v = true;
+                                        tel.send_message("Service is paused, if you want to reanudate it use the command /unpause.".to_string(), &None).await;
+                                    }
+                                    "/unpause" | "/unpause@monitor_bc_bot" => {
+                                        let mut pause_v = pause.lock().await;
+                                        *pause_v = false;
+                                        tel.send_message("Service is reanudated.".to_string(), &None).await;
+                                    }
                                     _ => {
                                         println!("Unknow command: {}", command_name);
                                     }
@@ -98,16 +121,24 @@ impl Monitor {
         }
     }
 
-    async fn run_website_monitor(tel: &Telegram, web: &Website, timeout: u64) {
+    async fn run_website_monitor(
+        tel: &Telegram,
+        web: &Website,
+        timeout: u64,
+        pause: Arc<Mutex<bool>>,
+    ) {
         loop {
-            let errors = web.sumary().await;
+            let pause_v = pause.lock().await;
+            if !*pause_v {
+                let errors = web.sumary().await;
 
-            if !errors.is_empty() {
-                for err in errors.iter() {
-                    println!("Err: {}", err);
+                if !errors.is_empty() {
+                    for err in errors.iter() {
+                        println!("Err: {}", err);
+                    }
+
+                    Monitor::handler_validation(errors, None, None, &tel).await;
                 }
-
-                Monitor::handler_validation(errors, None, None, &tel).await;
             }
 
             sleep(Duration::from_secs(timeout)).await;

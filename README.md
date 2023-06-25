@@ -5,7 +5,7 @@ This service is meant to mointoring the BinaryCoffee services and notify on tele
 ## List of monitored services
 
 - [x] Application vitality
-- [ ] Application certificate
+- [x] Application certificate
 - [x] Application frontend is working
 
 ## Project dev
@@ -66,10 +66,6 @@ tbd
 
 ## todo
 
-- [ ] Setting up docker configuration.
-- [ ] Deployment to hosing.
 - [ ] Add help, and support for application arguments.
-- [ ] Add pause command (this could be util when the system is intentionally stoped, and we don't want the bot to alert about it).
-    - [ ] When bot is in pause, it should be alerting the user every X time about it.
-    - [ ] Add unpause command too
+- [ ] When bot is in pause, it should be alerting the user every X time about it.
 

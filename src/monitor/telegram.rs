@@ -107,6 +107,14 @@ impl Telegram {
                 command: "/check_certs".to_string(),
                 description: "Validate certificates.".to_string(),
             },
+            BotCommand {
+                command: "/pause".to_string(),
+                description: "Pause validations.".to_string(),
+            },
+            BotCommand {
+                command: "/unpause".to_string(),
+                description: "Unpause validations.".to_string(),
+            },
         ];
         self.set_commands(configs).await;
     }
