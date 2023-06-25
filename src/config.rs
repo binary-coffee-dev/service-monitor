@@ -3,7 +3,7 @@ use std::{fs::File, io::BufReader};
 
 use serde::Deserialize;
 
-use crate::monitor::website::RouteTest;
+use crate::monitor::website::{RouteTest, Get};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {
@@ -12,6 +12,7 @@ pub struct Config {
     pub api_tests: Vec<RouteTest>,
     pub frontend_tests: Vec<RouteTest>,
     pub website_monitor_timeout: u64,
+    pub ssl_tests: Vec<Get>,
 }
 
 impl Config {
@@ -50,6 +51,7 @@ impl Config {
             api_tests: Vec::new(),
             frontend_tests: Vec::new(),
             website_monitor_timeout: 20,
+            ssl_tests: Vec::new(),
         }
     }
 }

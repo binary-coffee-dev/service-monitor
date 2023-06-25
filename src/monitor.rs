@@ -82,6 +82,9 @@ impl Monitor {
                                     "/check_frontend" | "/check_frontend@monitor_bc_bot" => {
                                         Monitor::execute_check_frontend(tel, web, group_id).await;
                                     }
+                                    "/check_certs" | "/check_certs@monitor_bc_bot" => {
+                                        Monitor::execute_check_certs(tel, web, group_id).await;
+                                    }
                                     _ => {
                                         println!("Unknow command: {}", command_name);
                                     }
@@ -109,6 +112,17 @@ impl Monitor {
 
             sleep(Duration::from_secs(timeout)).await;
         }
+    }
+
+    async fn execute_check_certs(tel: &Telegram, web: &Website, group_id: i64) {
+        let errs = web.certificates_vitaly().await;
+        Monitor::handler_validation(
+            errs,
+            Some("Certificates are OK.".to_string()),
+            Some(vec![group_id]),
+            tel,
+        )
+        .await;
     }
 
     async fn execute_check_frontend(tel: &Telegram, web: &Website, group_id: i64) {

@@ -1,13 +1,5 @@
-use std::time::Duration;
-
-use rocket::local::asynchronous;
-use serde::{Deserialize, Serialize};
-use tokio::time::sleep;
-
 use crate::config::Config;
-use crate::monitor::telegram::models::{
-    GetMyCommandsRes, GetUpdatesRes, Message, MessageEntity, SendMessageBody, Update,
-};
+use crate::monitor::telegram::models::{GetMyCommandsRes, GetUpdatesRes, SendMessageBody, Update};
 
 use self::models::{BotCommand, SetMyCommandsBody};
 
@@ -101,20 +93,19 @@ impl Telegram {
         let configs = vec![
             BotCommand {
                 command: "/check_all".to_string(),
-                description: "This command check if the api/frontend are running correctly"
-                    .to_string(),
+                description: "Validate all.".to_string(),
             },
             BotCommand {
                 command: "/check_api".to_string(),
-                description:
-                    "This command check if the [api.binarycoffee.dev] api is running correctly"
-                        .to_string(),
+                description: "Validate api.".to_string(),
             },
             BotCommand {
                 command: "/check_frontend".to_string(),
-                description:
-                    "This command check if the [binarycofee.dev] frontend is running correctly"
-                        .to_string(),
+                description: "Validate frontend.".to_string(),
+            },
+            BotCommand {
+                command: "/check_certs".to_string(),
+                description: "Validate certificates.".to_string(),
             },
         ];
         self.set_commands(configs).await;

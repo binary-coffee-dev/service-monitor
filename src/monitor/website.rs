@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use checkssl::CheckSSL;
 use reqwest::Client;
 
 use crate::config::Config;
@@ -61,8 +62,22 @@ impl Website {
     }
 
     pub async fn certificates_vitaly(&self) -> Vec<String> {
-        // todo
-        return Vec::new();
+        let mut ret = Vec::new();
+        for get in self.configs.ssl_tests.iter() {
+            let Get { url } = get;
+
+            match CheckSSL::from_domain(url.as_str()) {
+                Ok(_cert) => {
+                    println!("Cert for url [{}] is ok.", url);
+                }
+                Err(_) => {
+                    let msg = format!("Error with cert, url: {}.", url).to_string();
+                    println!("{msg}");
+                    ret.push(msg);
+                }
+            };
+        }
+        return ret;
     }
 
     async fn make_request(&self, test: &RouteTest, client: &Client, ret: &mut Vec<String>) {

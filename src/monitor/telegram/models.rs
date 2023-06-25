@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct GetUpdatesRes {
-    ok: bool,
     pub result: Vec<Update>,
 }
 
@@ -10,12 +9,10 @@ pub struct GetUpdatesRes {
 pub struct Update {
     pub update_id: i64,
     pub message: Option<Message>,
-    channel_post: Option<Message>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Message {
-    message_id: i64,
     pub chat: Chat,
     pub text: Option<String>,
     pub entities: Option<Vec<MessageEntity>>,
