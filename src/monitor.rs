@@ -88,6 +88,7 @@ impl Monitor {
                                     "/check_all" | "/check_all@monitor_bc_bot" => {
                                         Monitor::execute_check_api(tel, web, group_id).await;
                                         Monitor::execute_check_frontend(tel, web, group_id).await;
+                                        Monitor::execute_check_certs(tel, web, group_id).await;
                                     }
                                     "/check_api" | "/check_api@monitor_bc_bot" => {
                                         Monitor::execute_check_api(tel, web, group_id).await;
