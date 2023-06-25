@@ -92,11 +92,9 @@ impl Website {
 
         match res.status() {
             reqwest::StatusCode::OK => {
-                // show success message with test information
                 println!("Url POST [{}] is OK.", url);
             }
             _ => {
-                // error
                 ret.push(format!(
                     "The url POST [{}] fails and return an status {}.",
                     url,
@@ -111,11 +109,9 @@ impl Website {
         let res = client.get(url.to_owned()).send().await.unwrap();
         match res.status() {
             reqwest::StatusCode::OK => {
-                // show success message with test information
                 println!("Url GET [{}] is OK.", url);
             }
             _ => {
-                // error
                 ret.push(format!(
                     "The url GET [{}] fails and return an status {}.",
                     url,
