@@ -81,5 +81,4 @@ docker-compose up --build -d
 ## todo
 
 - [ ] Add help, and support for application arguments.
-- [ ] When bot is in pause, it should be alerting the user every X time about it.
 
