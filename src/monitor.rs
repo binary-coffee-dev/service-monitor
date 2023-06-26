@@ -46,6 +46,7 @@ impl Monitor {
                 &tel,
                 &web,
                 config_ref_wm.website_monitor_timeout.unwrap(),
+                config_ref_wm.pause_reminder_timeout.unwrap(),
                 pause_ref_wm,
             )
             .await;
@@ -107,7 +108,11 @@ impl Monitor {
                                     "/unpause" | "/unpause@monitor_bc_bot" => {
                                         let mut pause_v = pause.lock().await;
                                         *pause_v = false;
-                                        tel.send_message("Service is reanudated.".to_string(), &None).await;
+                                        tel.send_message(
+                                            "Service is reanudated.".to_string(),
+                                            &None,
+                                        )
+                                        .await;
                                     }
                                     _ => {
                                         println!("Unknow command: {}", command_name);
@@ -126,10 +131,17 @@ impl Monitor {
         tel: &Telegram,
         web: &Website,
         timeout: u64,
+        pause_reminder_timeout: u64,
         pause: Arc<Mutex<bool>>,
     ) {
+        let mut pause_time_ac = 0;
         loop {
             let pause_v = pause.lock().await;
+
+            if pause_time_ac >= pause_reminder_timeout {
+                tel.send_message("⚠️ REMINDER\nService monitor is in pause.".to_string(), &None).await;
+            }
+
             if !*pause_v {
                 let errors = web.sumary().await;
 
@@ -140,6 +152,8 @@ impl Monitor {
 
                     Monitor::handler_validation(errors, None, None, &tel).await;
                 }
+            } else {
+                pause_time_ac += timeout;
             }
 
             sleep(Duration::from_secs(timeout)).await;

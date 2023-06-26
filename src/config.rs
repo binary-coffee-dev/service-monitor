@@ -11,8 +11,9 @@ pub struct Config {
     pub groups: Option<Vec<i64>>,
     pub api_tests: Option<Vec<RouteTest>>,
     pub frontend_tests: Option<Vec<RouteTest>>,
-    pub website_monitor_timeout: Option<u64>,
     pub ssl_tests: Option<Vec<Get>>,
+    pub website_monitor_timeout: Option<u64>,
+    pub pause_reminder_timeout: Option<u64>,
 }
 
 impl Config {
@@ -66,6 +67,9 @@ impl Config {
         if config.ssl_tests.is_none() {
             config.ssl_tests = default.ssl_tests;
         }
+        if config.pause_reminder_timeout.is_none() {
+            config.pause_reminder_timeout = default.pause_reminder_timeout;
+        }
         return config;
     }
 
@@ -77,6 +81,7 @@ impl Config {
             frontend_tests: Some(Vec::new()),
             website_monitor_timeout: Some(20),
             ssl_tests: Some(Vec::new()),
+            pause_reminder_timeout: Some(86400),
         }
     }
 }
@@ -92,8 +97,9 @@ mod tests {
             groups: None,
             api_tests: None,
             frontend_tests: None,
-            website_monitor_timeout: None,
             ssl_tests: None,
+            website_monitor_timeout: None,
+            pause_reminder_timeout: None,
         };
 
         config = Config::merge_configs_with_defalt(config);
@@ -102,7 +108,8 @@ mod tests {
         assert!(config.groups.is_some());
         assert!(config.api_tests.is_some());
         assert!(config.frontend_tests.is_some());
-        assert!(config.website_monitor_timeout.is_some());
         assert!(config.ssl_tests.is_some());
+        assert!(config.website_monitor_timeout.is_some());
+        assert!(config.pause_reminder_timeout.is_some());
     }
 }
