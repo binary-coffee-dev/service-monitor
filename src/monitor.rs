@@ -45,7 +45,7 @@ impl Monitor {
             Monitor::run_website_monitor(
                 &tel,
                 &web,
-                config_ref_wm.website_monitor_timeout,
+                config_ref_wm.website_monitor_timeout.unwrap(),
                 pause_ref_wm,
             )
             .await;

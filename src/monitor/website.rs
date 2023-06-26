@@ -46,8 +46,10 @@ impl Website {
     pub async fn api_vitaly(&self) -> Vec<String> {
         let mut ret = Vec::new();
         let client = Client::new();
-        for test in self.configs.api_tests.iter() {
-            self.make_request(&test, &client, &mut ret).await;
+        if let Some(ref api_tests) = self.configs.api_tests {
+            for test in api_tests.iter() {
+                self.make_request(&test, &client, &mut ret).await;
+            }
         }
         return ret;
     }
@@ -55,27 +57,31 @@ impl Website {
     pub async fn frontend_vitaly(&self) -> Vec<String> {
         let mut ret = Vec::new();
         let client = Client::new();
-        for test in self.configs.frontend_tests.iter() {
-            self.make_request(&test, &client, &mut ret).await;
+        if let Some(ref frontend_tests) = self.configs.frontend_tests {
+            for test in frontend_tests.iter() {
+                self.make_request(&test, &client, &mut ret).await;
+            }
         }
         return ret;
     }
 
     pub async fn certificates_vitaly(&self) -> Vec<String> {
         let mut ret = Vec::new();
-        for get in self.configs.ssl_tests.iter() {
-            let Get { url } = get;
+        if let Some(ref ssl_tests) = self.configs.ssl_tests {
+            for get in ssl_tests.iter() {
+                let Get { url } = get;
 
-            match CheckSSL::from_domain(url.as_str()) {
-                Ok(_cert) => {
-                    println!("Cert for url [{}] is ok.", url);
-                }
-                Err(_) => {
-                    let msg = format!("❌ Error with cert, url: {}.", url).to_string();
-                    println!("{msg}");
-                    ret.push(msg);
-                }
-            };
+                match CheckSSL::from_domain(url.as_str()) {
+                    Ok(_cert) => {
+                        println!("Cert for url [{}] is ok.", url);
+                    }
+                    Err(_) => {
+                        let msg = format!("Error with cert, url: {}.", url).to_string();
+                        println!("{msg}");
+                        ret.push(msg);
+                    }
+                };
+            }
         }
         return ret;
     }

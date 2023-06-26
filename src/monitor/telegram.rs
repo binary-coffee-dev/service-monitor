@@ -15,7 +15,7 @@ impl Telegram {
     pub fn new(configs: Config) -> Telegram {
         let api_url = String::from(format!(
             "https://api.telegram.org/bot{}",
-            configs.telegram_bot_token
+            configs.telegram_bot_token.clone().unwrap()
         ));
         Telegram { configs, api_url }
     }
@@ -60,7 +60,7 @@ impl Telegram {
         let groups_ids = if let Some(ids) = groups {
             ids.clone()
         } else {
-            self.configs.groups.clone()
+            self.configs.groups.clone().unwrap()
         };
         let route = String::from(format!("{}/sendMessage", self.api_url));
         println!("route: {}", route);
