@@ -70,7 +70,13 @@ cargo run
 
 ### Start with docker
 
-tbd
+To start the project with docker run the following command.
+
+```
+docker-compose up --build -d
+```
+
+> Note: before execute the previous command, create the `config.json` in the root directory of the project.
 
 ## todo
 
