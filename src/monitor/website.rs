@@ -71,7 +71,7 @@ impl Website {
                     println!("Cert for url [{}] is ok.", url);
                 }
                 Err(_) => {
-                    let msg = format!("Error with cert, url: {}.", url).to_string();
+                    let msg = format!("❌ Error with cert, url: {}.", url).to_string();
                     println!("{msg}");
                     ret.push(msg);
                 }
@@ -111,7 +111,7 @@ impl Website {
             }
             _ => {
                 ret.push(format!(
-                    "The url POST [{}] fails and return an status {}.",
+                    "❌ The url POST [{}] fails and return an status {}.",
                     url,
                     res.status()
                 ));
@@ -128,7 +128,7 @@ impl Website {
             }
             _ => {
                 ret.push(format!(
-                    "The url GET [{}] fails and return an status {}.",
+                    "❌ The url GET [{}] fails and return an status {}.",
                     url,
                     res.status()
                 ));

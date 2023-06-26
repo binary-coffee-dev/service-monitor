@@ -150,7 +150,7 @@ impl Monitor {
         let errs = web.certificates_vitaly().await;
         Monitor::handler_validation(
             errs,
-            Some("Certificates are OK.".to_string()),
+            Some("✅ Certificates are OK.".to_string()),
             Some(vec![group_id]),
             tel,
         )
@@ -161,7 +161,7 @@ impl Monitor {
         let errs = web.frontend_vitaly().await;
         Monitor::handler_validation(
             errs,
-            Some("Frontend is working fine.".to_string()),
+            Some("✅ Frontend is working fine.".to_string()),
             Some(vec![group_id]),
             tel,
         )
@@ -172,7 +172,7 @@ impl Monitor {
         let errs = web.api_vitaly().await;
         Monitor::handler_validation(
             errs,
-            Some("Api is working fine.".to_string()),
+            Some("✅ Api is working fine.".to_string()),
             Some(vec![group_id]),
             tel,
         )
