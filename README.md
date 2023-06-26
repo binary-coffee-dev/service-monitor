@@ -44,6 +44,14 @@ The application configurations is a file with the following structure:
       "type": "GET",
       "url": "https://binarycoffee.dev/users/guille"
     }
+  ],
+  "ssl_tests": [
+    {
+      "url": "binarycoffee.dev"
+    },
+    {
+      "url": "api.binarycoffee.dev"
+    }
   ]
 }
 ```
