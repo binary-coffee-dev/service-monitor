@@ -79,43 +79,43 @@ impl Monitor {
                             if e.type_value == String::from("bot_command") {
                                 let offset_beg = e.offset as usize;
                                 let offset_end = (e.offset + e.length) as usize;
-                                let command_name =
-                                    text.to_string()[offset_beg..offset_end].to_string();
+                                let command_name = Monitor::extract_command(
+                                    text.to_string()[offset_beg..offset_end].to_string(),
+                                );
+
                                 println!("command: {}", command_name);
 
-                                // replace @monitor_bc_bot by a configuration attribute to make it
-                                // modular
                                 match command_name.as_str() {
-                                    "/check_all" | "/check_all@monitor_bc_bot" => {
+                                    "/check_all" => {
                                         Monitor::execute_check_api(tel, web, group_id).await;
                                         Monitor::execute_check_frontend(tel, web, group_id).await;
                                         Monitor::execute_check_certs(tel, web, group_id).await;
                                     }
-                                    "/check_api" | "/check_api@monitor_bc_bot" => {
+                                    "/check_api" => {
                                         Monitor::execute_check_api(tel, web, group_id).await;
                                     }
-                                    "/check_frontend" | "/check_frontend@monitor_bc_bot" => {
+                                    "/check_frontend" => {
                                         Monitor::execute_check_frontend(tel, web, group_id).await;
                                     }
-                                    "/check_certs" | "/check_certs@monitor_bc_bot" => {
+                                    "/check_certs" => {
                                         Monitor::execute_check_certs(tel, web, group_id).await;
                                     }
-                                    "/pause" | "/pause@monitor_bc_bot" => {
+                                    "/pause" => {
                                         let mut pause_v = pause.lock().await;
                                         *pause_v = true;
-                                        tel.send_message("Service is paused, if you want to reanudate it use the command /unpause.".to_string(), &None).await;
+                                        tel.send_message("✅ Service is paused, if you want to reanudate it use the command /unpause.".to_string(), &None).await;
                                     }
-                                    "/unpause" | "/unpause@monitor_bc_bot" => {
+                                    "/unpause" => {
                                         let mut pause_v = pause.lock().await;
                                         *pause_v = false;
                                         tel.send_message(
-                                            "Service is reanudated.".to_string(),
+                                            "✅ Service is reanudated.".to_string(),
                                             &None,
                                         )
                                         .await;
                                     }
                                     _ => {
-                                        println!("Unknow command: {}", command_name);
+                                        println!("⚠️ Unknow command: {}", command_name);
                                     }
                                 }
                             }
@@ -125,6 +125,13 @@ impl Monitor {
             }
             sleep(Duration::from_secs(2)).await;
         }
+    }
+
+    fn extract_command(command: String) -> String {
+        if let Some(index) = command.find('@') {
+            return command[0..index].to_string();
+        }
+        return command;
     }
 
     async fn run_website_monitor(
@@ -139,7 +146,11 @@ impl Monitor {
             let pause_v = pause.lock().await;
 
             if pause_time_ac >= pause_reminder_timeout {
-                tel.send_message("⚠️ REMINDER\nService monitor is in pause.".to_string(), &None).await;
+                tel.send_message(
+                    "⚠️ REMINDER\nService monitor is in pause.".to_string(),
+                    &None,
+                )
+                .await;
             }
 
             if !*pause_v {
@@ -223,5 +234,22 @@ impl Monitor {
             return report;
         }
         return default;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Monitor;
+
+    #[test]
+    fn extract_command_test() {
+        assert_eq!(
+            "/check_all",
+            Monitor::extract_command("/check_all@monitor_bc_bot".to_string())
+        );
+        assert_eq!(
+            "/check_all",
+            Monitor::extract_command("/check_all".to_string())
+        );
     }
 }
