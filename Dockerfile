@@ -1,10 +1,23 @@
-FROM rust:1.70
+FROM rust:1.70 AS build-container
 
-WORKDIR /app
+# setup dummie projet
+RUN USER=root cargo new build_dir
+WORKDIR /build_dir
 
-COPY . .
+# coping and installing the dependencies
+COPY Cargo.toml Cargo.lock ./
+RUN cargo fetch
 
+# coping and build base code
+COPY src ./src
 RUN cargo build --release
 
-CMD ["./target/release/service-monitor"]
+FROM debian:buster-slim
+
+COPY --from=build-container /build_dir/target/release/service-monitor .
+COPY config.json .
+
+RUN apt update && apt install libssl-dev ca-certificates -y
+
+CMD ["./service-monitor"]
 
