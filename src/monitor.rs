@@ -72,9 +72,10 @@ impl Monitor {
             }
             for update in updates {
                 if let Some(msg) = update.message {
-                    let text = msg.text.unwrap();
-                    let group_id = msg.chat.id;
                     if let Some(ent) = msg.entities {
+                        let text = msg.text.unwrap();
+                        let group_id = msg.chat.id;
+
                         for e in ent.iter() {
                             if e.type_value == String::from("bot_command") {
                                 let offset_beg = e.offset as usize;
