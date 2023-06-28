@@ -14,6 +14,7 @@ pub struct Config {
     pub ssl_tests: Option<Vec<Get>>,
     pub website_monitor_timeout: Option<u64>,
     pub pause_reminder_timeout: Option<u64>,
+    pub times_to_retry_telegram: Option<i64>,
 }
 
 impl Config {
@@ -70,6 +71,9 @@ impl Config {
         if config.pause_reminder_timeout.is_none() {
             config.pause_reminder_timeout = default.pause_reminder_timeout;
         }
+        if config.times_to_retry_telegram.is_none() {
+            config.times_to_retry_telegram = default.times_to_retry_telegram;
+        }
         return config;
     }
 
@@ -82,6 +86,7 @@ impl Config {
             website_monitor_timeout: Some(20),
             ssl_tests: Some(Vec::new()),
             pause_reminder_timeout: Some(86400),
+            times_to_retry_telegram: Some(5),
         }
     }
 }
@@ -100,6 +105,7 @@ mod tests {
             ssl_tests: None,
             website_monitor_timeout: None,
             pause_reminder_timeout: None,
+            times_to_retry_telegram: None,
         };
 
         config = Config::merge_configs_with_defalt(config);
@@ -111,5 +117,6 @@ mod tests {
         assert!(config.ssl_tests.is_some());
         assert!(config.website_monitor_timeout.is_some());
         assert!(config.pause_reminder_timeout.is_some());
+        assert!(config.times_to_retry_telegram.is_some());
     }
 }

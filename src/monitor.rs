@@ -29,21 +29,21 @@ impl Monitor {
         let config_ref_rm = self.configs.clone();
         let pause_ref_rm = pause.clone();
         let telegram_monitor_thread = rt.spawn(async move {
-            let tel = Telegram::new(config_ref_rm.clone());
+            let mut tel = Telegram::new(config_ref_rm.clone());
             let web = Website::new(config_ref_rm.clone());
 
-            Monitor::run_commands_sync(&tel).await;
-            Monitor::run_telegram_monitor(&tel, &web, pause_ref_rm).await;
+            Monitor::run_commands_sync(&mut tel).await;
+            Monitor::run_telegram_monitor(&mut tel, &web, pause_ref_rm).await;
         });
 
         let config_ref_wm = self.configs.clone();
         let pause_ref_wm = pause.clone();
         let website_monitor = rt.spawn(async move {
-            let tel = Telegram::new(config_ref_wm.clone());
+            let mut tel = Telegram::new(config_ref_wm.clone());
             let web = Website::new(config_ref_wm.clone());
 
             Monitor::run_website_monitor(
-                &tel,
+                &mut tel,
                 &web,
                 config_ref_wm.website_monitor_timeout.unwrap(),
                 config_ref_wm.pause_reminder_timeout.unwrap(),
@@ -57,14 +57,15 @@ impl Monitor {
         let _result = tokio::join!(telegram_monitor_thread, website_monitor);
     }
 
-    async fn run_commands_sync(tel: &Telegram) {
+    async fn run_commands_sync(tel: &mut Telegram) {
         tel.sync_commands().await;
         let commands = tel.get_commands().await;
         println!("commands: {:?}", commands);
     }
 
-    async fn run_telegram_monitor(tel: &Telegram, web: &Website, pause: Arc<Mutex<bool>>) {
+    async fn run_telegram_monitor(tel: &mut Telegram, web: &Website, pause: Arc<Mutex<bool>>) {
         loop {
+            tel.send_pendings_messages().await;
             let updates = tel.get_all_updates().await;
             if !updates.is_empty() {
                 println!("--------------------");
@@ -136,7 +137,7 @@ impl Monitor {
     }
 
     async fn run_website_monitor(
-        tel: &Telegram,
+        tel: &mut Telegram,
         web: &Website,
         timeout: u64,
         pause_reminder_timeout: u64,
@@ -162,7 +163,7 @@ impl Monitor {
                         println!("Err: {}", err);
                     }
 
-                    Monitor::handler_validation(errors, None, None, &tel).await;
+                    Monitor::handler_validation(errors, None, None, tel).await;
                 }
             } else {
                 pause_time_ac += timeout;
@@ -172,7 +173,7 @@ impl Monitor {
         }
     }
 
-    async fn execute_check_certs(tel: &Telegram, web: &Website, group_id: i64) {
+    async fn execute_check_certs(tel: &mut Telegram, web: &Website, group_id: i64) {
         let errs = web.certificates_vitaly().await;
         Monitor::handler_validation(
             errs,
@@ -183,7 +184,7 @@ impl Monitor {
         .await;
     }
 
-    async fn execute_check_frontend(tel: &Telegram, web: &Website, group_id: i64) {
+    async fn execute_check_frontend(tel: &mut Telegram, web: &Website, group_id: i64) {
         let errs = web.frontend_vitaly().await;
         Monitor::handler_validation(
             errs,
@@ -194,7 +195,7 @@ impl Monitor {
         .await;
     }
 
-    async fn execute_check_api(tel: &Telegram, web: &Website, group_id: i64) {
+    async fn execute_check_api(tel: &mut Telegram, web: &Website, group_id: i64) {
         let errs = web.api_vitaly().await;
         Monitor::handler_validation(
             errs,
@@ -209,7 +210,7 @@ impl Monitor {
         errs: Vec<String>,
         success_msg: Option<String>,
         group_ids: Option<Vec<i64>>,
-        tel: &Telegram,
+        tel: &mut Telegram,
     ) {
         match success_msg {
             Some(msg) => {
