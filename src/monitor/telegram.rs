@@ -198,7 +198,7 @@ impl Telegram {
 
     async fn retry_request(&mut self, req: &TelegramRequest) -> Result<reqwest::Response, String> {
         let mut times = 0;
-        let times_to_retry_telegram = self.configs.times_to_retry_telegram.unwrap();
+        let times_to_retry_telegram = self.configs.times_to_retry.unwrap();
         loop {
             times += 1;
             match req {

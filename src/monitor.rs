@@ -67,10 +67,10 @@ impl Monitor {
         loop {
             tel.send_pendings_messages().await;
             let updates = tel.get_all_updates().await;
-            if !updates.is_empty() {
+            // if !updates.is_empty() {
                 println!("--------------------");
                 println!("{:?}", updates);
-            }
+            // }
             for update in updates {
                 if let Some(msg) = update.message {
                     if let Some(ent) = msg.entities {

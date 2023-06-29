@@ -103,41 +103,72 @@ impl Website {
             body,
             content_type,
         } = post;
-        let res = client
-            .post(url.clone())
-            .header("Content-Type", content_type)
-            .body(body.to_owned())
-            .send()
-            .await
-            .unwrap();
+        let times_to_retry = self.configs.times_to_retry.unwrap();
+        let mut times = 0;
+        loop {
+            times += 1;
+            let res_value = client
+                .post(url.clone())
+                .header("Content-Type", content_type)
+                .body(body.to_owned())
+                .send()
+                .await;
 
-        match res.status() {
-            reqwest::StatusCode::OK => {
-                println!("Url POST [{}] is OK.", url);
-            }
-            _ => {
-                ret.push(format!(
-                    "❌ The url POST [{}] fails and return an status {}.",
-                    url,
-                    res.status()
-                ));
+            match res_value {
+                Ok(res) => match res.status() {
+                    reqwest::StatusCode::OK => {
+                        println!("Url POST [{}] is OK.", url);
+                        break;
+                    }
+                    _ => {
+                        ret.push(format!(
+                            "❌ The url POST [{}] fails and return an status {}.",
+                            url,
+                            res.status()
+                        ));
+                        break;
+                    }
+                },
+                Err(err) => {
+                    if times >= times_to_retry {
+                        print!("Error: {:?}", err);
+                        ret.push(format!("❌ The url POST [{}] fails.", url,));
+                        break;
+                    }
+                }
             }
         }
     }
 
     async fn get_request(&self, get: &Get, client: &Client, ret: &mut Vec<String>) {
         let Get { url } = get;
-        let res = client.get(url.to_owned()).send().await.unwrap();
-        match res.status() {
-            reqwest::StatusCode::OK => {
-                println!("Url GET [{}] is OK.", url);
-            }
-            _ => {
-                ret.push(format!(
-                    "❌ The url GET [{}] fails and return an status {}.",
-                    url,
-                    res.status()
-                ));
+        let times_to_retry = self.configs.times_to_retry.unwrap();
+        let mut times = 0;
+        loop {
+            times += 1;
+            let res_value = client.get(url.to_owned()).send().await;
+            match res_value {
+                Ok(res) => match res.status() {
+                    reqwest::StatusCode::OK => {
+                        println!("Url GET [{}] is OK.", url);
+                        break;
+                    }
+                    _ => {
+                        ret.push(format!(
+                            "❌ The url GET [{}] fails and return an status {}.",
+                            url,
+                            res.status()
+                        ));
+                        break;
+                    }
+                },
+                Err(err) => {
+                    if times >= times_to_retry {
+                        print!("Error: {:?}", err);
+                        ret.push(format!("❌ The url GET [{}] fails.", url,));
+                        break;
+                    }
+                }
             }
         }
     }
