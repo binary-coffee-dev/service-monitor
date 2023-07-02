@@ -76,7 +76,7 @@ impl Website {
                         println!("Cert for url [{}] is ok.", url);
                     }
                     Err(_) => {
-                        let msg = format!("Error with cert, url: {}.", url).to_string();
+                        let msg = format!("❌ Error with cert, url: {}.", url).to_string();
                         println!("{msg}");
                         ret.push(msg);
                     }
