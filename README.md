@@ -81,4 +81,7 @@ docker-compose up --build -d
 ## todo
 
 - [ ] Add help, and support for application arguments.
+- [ ] Add documentation when the bot gets the start command from Telegram
+  - [ ] Add the documentation as a configurable parameter
+- [ ] Setting up an endpoint to be able to publish alerts by demand from the API
 
