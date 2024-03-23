@@ -7,6 +7,7 @@ This service is meant to mointoring the BinaryCoffee services and notify on tele
 - [x] Application vitality
 - [x] Application certificate
 - [x] Application frontend is working
+- [ ] Endpoint to rise directly notifications
 
 ## Project dev
 
@@ -78,9 +79,12 @@ docker-compose up --build -d
 
 > Note: before execute the previous command, create the `config.json` in the root directory of the project.
 
-## todo
+## toDo
 
 - [ ] Add help, and support for application arguments.
+- [ ] Fix spaghetti code (hideous code)
+- [ ] Add test coverage (code is not tested)
+- [ ] Add argument to the script, so is possible to disable functionalities when is executed
 - [ ] Add documentation when the bot gets the start command from Telegram
   - [ ] Add the documentation as a configurable parameter
 - [ ] Setting up an endpoint to be able to publish alerts by demand from the API

@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate rocket;
-
 use crate::config::Config;
 use crate::monitor::Monitor;
 

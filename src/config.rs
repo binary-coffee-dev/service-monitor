@@ -15,6 +15,11 @@ pub struct Config {
     pub website_monitor_timeout: Option<u64>,
     pub pause_reminder_timeout: Option<u64>,
     pub times_to_retry: Option<i64>,
+
+    // api
+    pub host: Option<String>,
+    pub port: Option<u32>,
+    pub api_token: Option<String>,
 }
 
 impl Config {
@@ -46,7 +51,7 @@ impl Config {
         if configs.telegram_bot_token.is_none() {
             panic!("Telegram bot token wasn't set in the configurations.");
         }
-        println!("{:?}", configs);
+        // println!("{:?}", configs);
 
         return configs;
     }
@@ -74,6 +79,15 @@ impl Config {
         if config.times_to_retry.is_none() {
             config.times_to_retry = default.times_to_retry;
         }
+        if config.host.is_none() {
+            config.host = default.host;
+        }
+        if config.port.is_none() {
+            config.port = default.port;
+        }
+        if config.api_token.is_none() {
+            config.api_token = default.api_token;
+        }
         return config;
     }
 
@@ -87,6 +101,9 @@ impl Config {
             ssl_tests: Some(Vec::new()),
             pause_reminder_timeout: Some(86400),
             times_to_retry: Some(5),
+            host: Some("127.0.0.1".to_string()),
+            port: Some(5353),
+            api_token: Some("service_token".to_string()),
         }
     }
 }
@@ -106,6 +123,9 @@ mod tests {
             website_monitor_timeout: None,
             pause_reminder_timeout: None,
             times_to_retry: None,
+            host: None,
+            port: None,
+            api_token: None,
         };
 
         config = Config::merge_configs_with_defalt(config);
@@ -118,5 +138,8 @@ mod tests {
         assert!(config.website_monitor_timeout.is_some());
         assert!(config.pause_reminder_timeout.is_some());
         assert!(config.times_to_retry.is_some());
+        assert!(config.host.is_some());
+        assert!(config.port.is_some());
+        assert!(config.api_token.is_some());
     }
 }

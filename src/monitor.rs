@@ -5,7 +5,7 @@ use tokio::sync::Mutex;
 use tokio::time::sleep;
 
 use crate::config::Config;
-// use crate::monitor::api::start_server;
+use crate::monitor::api::Api;
 use crate::monitor::telegram::Telegram;
 use crate::monitor::website::Website;
 
@@ -15,11 +15,15 @@ pub mod website;
 
 pub struct Monitor {
     configs: Config,
+    api: Arc<Mutex<Api>>,
 }
 
 impl Monitor {
     pub fn new(configs: Config) -> Monitor {
-        Monitor { configs }
+        Monitor {
+            configs: configs.clone(),
+            api: Arc::new(Mutex::new(Api::new(configs))),
+        }
     }
 
     pub async fn start(&self) {
@@ -49,12 +53,15 @@ impl Monitor {
                 config_ref_wm.pause_reminder_timeout.unwrap(),
                 pause_ref_wm,
             )
-            .await;
+                .await;
         });
 
-        // start_server().unwrap();
+        let api_mutex = self.api.clone();
+        let api_service = rt.spawn(async move {
+            api_mutex.lock().await.start_api().await
+        });
 
-        let _result = tokio::join!(telegram_monitor_thread, website_monitor);
+        let _result = tokio::join!(telegram_monitor_thread, website_monitor, api_service);
     }
 
     async fn run_commands_sync(tel: &mut Telegram) {
@@ -114,7 +121,7 @@ impl Monitor {
                                             "✅ Service is reanudated.".to_string(),
                                             &None,
                                         )
-                                        .await;
+                                            .await;
                                     }
                                     _ => {
                                         println!("⚠️ Unknow command: {}", command_name);
@@ -152,7 +159,7 @@ impl Monitor {
                     "⚠️ REMINDER\nService monitor is in pause.".to_string(),
                     &None,
                 )
-                .await;
+                    .await;
             }
 
             if !*pause_v {
@@ -181,7 +188,7 @@ impl Monitor {
             Some(vec![group_id]),
             tel,
         )
-        .await;
+            .await;
     }
 
     async fn execute_check_frontend(tel: &mut Telegram, web: &Website, group_id: i64) {
@@ -192,7 +199,7 @@ impl Monitor {
             Some(vec![group_id]),
             tel,
         )
-        .await;
+            .await;
     }
 
     async fn execute_check_api(tel: &mut Telegram, web: &Website, group_id: i64) {
@@ -203,7 +210,7 @@ impl Monitor {
             Some(vec![group_id]),
             tel,
         )
-        .await;
+            .await;
     }
 
     async fn handler_validation(
