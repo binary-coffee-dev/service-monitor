@@ -122,7 +122,6 @@ Authorization: Basic dGVzdA==
 ## toDo
 
 - [ ] Add help, and support for application arguments.
-- [ ] Fix spaghetti code (hideous code)
 - [ ] Add test coverage (code is not tested)
 - [ ] Allow to define the default route for the configuration file
 - [ ] Before test an url, ping the domain to see if is available

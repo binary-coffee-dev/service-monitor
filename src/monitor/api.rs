@@ -51,6 +51,7 @@ impl ApiService {
                 // validate message to then notify to telegram
                 println!("Notification request: {:?}", body);
 
+                // send message to telegram
                 telegram_ref.lock().await.send_message(body.get("message").unwrap().to_string(), &None).await;
 
                 // 200 response
