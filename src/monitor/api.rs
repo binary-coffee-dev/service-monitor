@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
 
 use tokio::sync::Mutex;
 use warp::Filter;
@@ -42,7 +44,7 @@ impl ApiService {
             .and(warp::any().map(move || telegram_ref.clone()))
             .then(|body: HashMap<String, String>, token: String, auth_token: String, telegram_ref: Arc<Mutex<TelegramService>>| async move {
                 // validate access token
-                if !auth_token.eq(&token) {
+                if !ApiService::validate_auth(&auth_token, &token) {
                     return warp::reply::with_status("FORBIDDEN", warp::http::StatusCode::FORBIDDEN);
                 }
 
@@ -54,5 +56,48 @@ impl ApiService {
                 // 200 response
                 warp::reply::with_status("ACCEPTED", warp::http::StatusCode::ACCEPTED)
             })
+    }
+
+    fn validate_auth(api_token: &str, base64_token: &str) -> bool {
+        let base64_token = base64_token.trim();
+
+        let e: Option<usize> = base64_token.find(" ");
+        if e.is_none() {
+            return false;
+        }
+
+        if &base64_token[0..e.unwrap()] != "Basic" {
+            return false;
+        }
+
+        return match BASE64_STANDARD.decode(&base64_token[e.unwrap()..].trim()) {
+            Ok(token) => {
+                api_token.eq(&String::from_utf8(token).unwrap())
+            }
+            Err(_) => {
+                false
+            }
+        };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::monitor::api::ApiService;
+
+    #[test]
+    fn validate_auth_token_test() {
+        // valid tokens
+        assert_eq!(true, ApiService::validate_auth("test", "Basic dGVzdA=="));
+        assert_eq!(true, ApiService::validate_auth("test", " Basic dGVzdA=="));
+        assert_eq!(true, ApiService::validate_auth("test", " Basic  dGVzdA==  "));
+
+        // invalid tokens
+        assert_eq!(false, ApiService::validate_auth("test", "dGVzdA==  "));
+        assert_eq!(false, ApiService::validate_auth("test", "Basi cdGVzdA=="));
+        assert_eq!(false, ApiService::validate_auth("tests", "Basic dGVzdA=="));
+
+        // invalid base64
+        assert_eq!(false, ApiService::validate_auth("tests", "Basic cdGVzdA=="));
     }
 }

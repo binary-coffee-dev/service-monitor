@@ -1,11 +1,12 @@
 [package]
 name = "service-monitor"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+base64 = "0.22.0"
 warp = "0.3.6"
 reqwest = { version = "0.11", features = ["json"] }
 tokio = { version = "1.28.2", features = ["full"] }
