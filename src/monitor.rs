@@ -283,7 +283,7 @@ impl Validator {
 
 #[cfg(test)]
 mod tests {
-    use super::{Monitor, TelegramMonitor};
+    use super::{TelegramMonitor};
 
     #[test]
     fn extract_command_test() {
