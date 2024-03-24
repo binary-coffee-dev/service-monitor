@@ -102,6 +102,7 @@ impl TelegramService {
             let body_obj = SendMessageBody {
                 chat_id,
                 text: text.clone(),
+                parse_mode: "markdown".to_string(),
             };
             let body = serde_json::to_string(&body_obj).expect("todo");
             println!("body: {}", body);
@@ -225,7 +226,7 @@ impl TelegramService {
                                     "Failing connecting to telegram api. {:?}",
                                     err
                                 )
-                                .to_string());
+                                    .to_string());
                             }
                         }
                     }
@@ -242,7 +243,7 @@ impl TelegramService {
                                     "Failing connecting to telegram api. {:?}",
                                     err
                                 )
-                                .to_string());
+                                    .to_string());
                             }
                         }
                     }

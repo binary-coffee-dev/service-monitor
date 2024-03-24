@@ -35,6 +35,7 @@ pub struct MessageEntity {
 pub struct SendMessageBody {
     pub chat_id: i64,
     pub text: String,
+    pub parse_mode: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
