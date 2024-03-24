@@ -5,4 +5,5 @@ services:
     build:
       context: .
     restart: always
-
+    ports:
+      - "127.0.0.1:6565:6565"
