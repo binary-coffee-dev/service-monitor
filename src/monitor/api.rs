@@ -37,7 +37,7 @@ impl ApiService {
         warp::path!("notification")
             .and(warp::post())
             .and(warp::body::json())
-            .and(warp::header::<String>("Authentication"))
+            .and(warp::header::<String>("Authorization"))
             // inject auth token
             .and(warp::any().map(move || auth_token.clone()))
             // inject telegram service reference
