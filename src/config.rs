@@ -20,6 +20,7 @@ pub struct Config {
     pub host: Option<String>,
     pub port: Option<u32>,
     pub api_token: Option<String>,
+    pub enable_api: Option<bool>,
 }
 
 impl Config {
@@ -88,6 +89,9 @@ impl Config {
         if config.api_token.is_none() {
             config.api_token = default.api_token;
         }
+        if config.enable_api.is_none() {
+            config.enable_api = default.enable_api;
+        }
         return config;
     }
 
@@ -104,6 +108,7 @@ impl Config {
             host: Some("127.0.0.1".to_string()),
             port: Some(5353),
             api_token: Some("service_token".to_string()),
+            enable_api: Some(true)
         }
     }
 }
@@ -126,6 +131,7 @@ mod tests {
             host: None,
             port: None,
             api_token: None,
+            enable_api: None,
         };
 
         config = Config::merge_configs_with_defalt(config);
@@ -141,5 +147,6 @@ mod tests {
         assert!(config.host.is_some());
         assert!(config.port.is_some());
         assert!(config.api_token.is_some());
+        assert!(config.enable_api.is_some());
     }
 }

@@ -63,8 +63,10 @@ impl Monitor {
         let config_ref = self.configs.clone();
         let telegram_service_ref = self.telegram_service.clone();
         let api_service = rt.spawn(async move {
-            let api_service = ApiService::new(config_ref, telegram_service_ref);
-            api_service.start_api().await
+            if config_ref.enable_api.unwrap() {
+                let api_service = ApiService::new(config_ref, telegram_service_ref);
+                api_service.start_api().await
+            }
         });
 
         let _result = tokio::join!(telegram_monitor_thread, website_monitor, api_service);
