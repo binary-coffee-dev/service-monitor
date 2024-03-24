@@ -18,19 +18,19 @@ enum TelegramRequest {
 }
 
 #[derive(Clone)]
-pub struct Telegram {
+pub struct TelegramService {
     configs: Config,
     api_url: String,
     pending_messages: Vec<TelegramRequest>,
 }
 
-impl Telegram {
-    pub fn new(configs: Config) -> Telegram {
+impl TelegramService {
+    pub fn new(configs: Config) -> TelegramService {
         let api_url = String::from(format!(
             "https://api.telegram.org/bot{}",
             configs.telegram_bot_token.clone().unwrap()
         ));
-        Telegram {
+        TelegramService {
             configs,
             api_url,
             pending_messages: Vec::new(),

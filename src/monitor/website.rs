@@ -1,3 +1,4 @@
+use std::time::Duration;
 use serde::{Deserialize, Serialize};
 
 use checkssl::CheckSSL;
@@ -24,13 +25,13 @@ pub enum RouteTest {
     GET(Get),
 }
 
-pub struct Website {
+pub struct WebsiteService {
     configs: Config,
 }
 
-impl Website {
-    pub fn new(configs: Config) -> Website {
-        Website { configs }
+impl WebsiteService {
+    pub fn new(configs: Config) -> WebsiteService {
+        WebsiteService { configs }
     }
 
     pub async fn sumary(&self) -> Vec<String> {
@@ -111,6 +112,7 @@ impl Website {
                 .post(url.clone())
                 .header("Content-Type", content_type)
                 .body(body.to_owned())
+                .timeout(Duration::new(5, 0))
                 .send()
                 .await;
 

@@ -5,9 +5,9 @@ use tokio::sync::Mutex;
 use tokio::time::sleep;
 
 use crate::config::Config;
-use crate::monitor::api::Api;
-use crate::monitor::telegram::Telegram;
-use crate::monitor::website::Website;
+use crate::monitor::api::ApiService;
+use crate::monitor::telegram::TelegramService;
+use crate::monitor::website::WebsiteService;
 
 pub mod api;
 pub mod telegram;
@@ -15,14 +15,20 @@ pub mod website;
 
 pub struct Monitor {
     configs: Config,
-    api: Arc<Mutex<Api>>,
+    telegram_service: Arc<Mutex<TelegramService>>,
+    web_service: Arc<Mutex<WebsiteService>>,
 }
 
+/// This class introduces three key services: Telegram integration for communication, website
+/// monitoring for surveillance, and an API service for streamlined data access.
 impl Monitor {
     pub fn new(configs: Config) -> Monitor {
+        let telegram = Arc::new(Mutex::new(TelegramService::new(configs.clone())));
+        let web = Arc::new(Mutex::new(WebsiteService::new(configs.clone())));
         Monitor {
             configs: configs.clone(),
-            api: Arc::new(Mutex::new(Api::new(configs))),
+            web_service: web.clone(),
+            telegram_service: telegram.clone(),
         }
     }
 
@@ -30,50 +36,112 @@ impl Monitor {
         let pause = Arc::new(Mutex::new(false));
         let rt = tokio::runtime::Runtime::new().unwrap();
 
-        let config_ref_rm = self.configs.clone();
-        let pause_ref_rm = pause.clone();
+        // start telegram command checker
+        let pause_ref = pause.clone();
+        let telegram_service_ref = self.telegram_service.clone();
+        let web_service_ref = self.web_service.clone();
         let telegram_monitor_thread = rt.spawn(async move {
-            let mut tel = Telegram::new(config_ref_rm.clone());
-            let web = Website::new(config_ref_rm.clone());
-
-            Monitor::run_commands_sync(&mut tel).await;
-            Monitor::run_telegram_monitor(&mut tel, &web, pause_ref_rm).await;
+            let telegram_monitor = TelegramMonitor::new(
+                telegram_service_ref,
+                web_service_ref,
+                pause_ref,
+            );
+            telegram_monitor.start_monitoring().await
         });
 
-        let config_ref_wm = self.configs.clone();
-        let pause_ref_wm = pause.clone();
+        // start web monitoring
+        let config_ref = self.configs.clone();
+        let pause_ref = pause.clone();
+        let telegram_service_ref = self.telegram_service.clone();
+        let web_service_ref = self.web_service.clone();
         let website_monitor = rt.spawn(async move {
-            let mut tel = Telegram::new(config_ref_wm.clone());
-            let web = Website::new(config_ref_wm.clone());
-
-            Monitor::run_website_monitor(
-                &mut tel,
-                &web,
-                config_ref_wm.website_monitor_timeout.unwrap(),
-                config_ref_wm.pause_reminder_timeout.unwrap(),
-                pause_ref_wm,
-            )
-                .await;
+            let web_monitor = WebMonitor::new(config_ref, telegram_service_ref, web_service_ref, pause_ref.clone());
+            web_monitor.run_website_monitor().await;
         });
 
-        let api_mutex = self.api.clone();
+        // start api service
+        let config_ref = self.configs.clone();
+        let telegram_service_ref = self.telegram_service.clone();
         let api_service = rt.spawn(async move {
-            api_mutex.lock().await.start_api().await
+            let api_service = ApiService::new(config_ref, telegram_service_ref);
+            api_service.start_api().await
         });
 
         let _result = tokio::join!(telegram_monitor_thread, website_monitor, api_service);
     }
+}
 
-    async fn run_commands_sync(tel: &mut Telegram) {
-        tel.sync_commands().await;
-        let commands = tel.get_commands().await;
+struct WebMonitor {
+    configs: Config,
+    telegram: Arc<Mutex<TelegramService>>,
+    web: Arc<Mutex<WebsiteService>>,
+    pause_service: Arc<Mutex<bool>>,
+    validator: Arc<Mutex<Validator>>,
+}
+
+impl WebMonitor {
+    pub fn new(configs: Config, telegram: Arc<Mutex<TelegramService>>, web: Arc<Mutex<WebsiteService>>, pause_service: Arc<Mutex<bool>>) -> WebMonitor {
+        let validator = Arc::new(Mutex::new(Validator::new(telegram.clone(), web.clone())));
+        WebMonitor { configs, telegram, web, pause_service, validator }
+    }
+
+    pub async fn run_website_monitor(&self) {
+        let mut pause_time_ac = 0;
+        loop {
+            if pause_time_ac >= self.configs.pause_reminder_timeout.unwrap() {
+                self.telegram.lock().await.send_message(
+                    "⚠️ REMINDER\nService monitor is in pause.".to_string(),
+                    &None,
+                ).await;
+            }
+
+            let pause_v = self.pause_service.lock().await;
+            if !*pause_v {
+                let errors = self.web.lock().await.sumary().await;
+
+                if !errors.is_empty() {
+                    for err in errors.iter() {
+                        println!("Err: {}", err);
+                    }
+
+                    self.validator.lock().await.handler_validation(errors, None, None).await;
+                }
+            } else {
+                pause_time_ac += self.configs.website_monitor_timeout.unwrap();
+            }
+
+            sleep(Duration::from_secs(self.configs.website_monitor_timeout.unwrap())).await;
+        }
+    }
+}
+
+struct TelegramMonitor {
+    telegram: Arc<Mutex<TelegramService>>,
+    pause_service: Arc<Mutex<bool>>,
+    validator: Arc<Mutex<Validator>>,
+}
+
+impl TelegramMonitor {
+    pub fn new(telegram: Arc<Mutex<TelegramService>>, web: Arc<Mutex<WebsiteService>>, pause_service: Arc<Mutex<bool>>) -> TelegramMonitor {
+        let validator = Arc::new(Mutex::new(Validator::new(telegram.clone(), web.clone())));
+        TelegramMonitor { telegram, pause_service, validator }
+    }
+
+    pub async fn start_monitoring(&self) {
+        TelegramMonitor::run_commands_sync(self).await;
+        TelegramMonitor::run_telegram_monitor(self).await;
+    }
+
+    async fn run_commands_sync(&self) {
+        self.telegram.lock().await.sync_commands().await;
+        let commands = self.telegram.lock().await.get_commands().await;
         println!("commands: {:?}", commands);
     }
 
-    async fn run_telegram_monitor(tel: &mut Telegram, web: &Website, pause: Arc<Mutex<bool>>) {
+    async fn run_telegram_monitor(&self) {
         loop {
-            tel.send_pendings_messages().await;
-            let updates = tel.get_all_updates().await;
+            self.telegram.lock().await.send_pendings_messages().await;
+            let updates = self.telegram.lock().await.get_all_updates().await;
             if !updates.is_empty() {
                 println!("--------------------");
                 println!("{:?}", updates);
@@ -88,7 +156,7 @@ impl Monitor {
                             if e.type_value == String::from("bot_command") {
                                 let offset_beg = e.offset as usize;
                                 let offset_end = (e.offset + e.length) as usize;
-                                let command_name = Monitor::extract_command(
+                                let command_name = TelegramMonitor::extract_command(
                                     text.to_string()[offset_beg..offset_end].to_string(),
                                 );
 
@@ -96,32 +164,31 @@ impl Monitor {
 
                                 match command_name.as_str() {
                                     "/check_all" => {
-                                        Monitor::execute_check_api(tel, web, group_id).await;
-                                        Monitor::execute_check_frontend(tel, web, group_id).await;
-                                        Monitor::execute_check_certs(tel, web, group_id).await;
+                                        self.validator.lock().await.execute_check_api(group_id).await;
+                                        self.validator.lock().await.execute_check_frontend(group_id).await;
+                                        self.validator.lock().await.execute_check_certs(group_id).await;
                                     }
                                     "/check_api" => {
-                                        Monitor::execute_check_api(tel, web, group_id).await;
+                                        self.validator.lock().await.execute_check_api(group_id).await;
                                     }
                                     "/check_frontend" => {
-                                        Monitor::execute_check_frontend(tel, web, group_id).await;
+                                        self.validator.lock().await.execute_check_frontend(group_id).await;
                                     }
                                     "/check_certs" => {
-                                        Monitor::execute_check_certs(tel, web, group_id).await;
+                                        self.validator.lock().await.execute_check_certs(group_id).await;
                                     }
                                     "/pause" => {
-                                        let mut pause_v = pause.lock().await;
+                                        let mut pause_v = self.pause_service.lock().await;
                                         *pause_v = true;
-                                        tel.send_message("✅ Service is paused, if you want to reanudate it use the command /unpause.".to_string(), &None).await;
+                                        self.telegram.lock().await.send_message("✅ Service is paused, if you want to reanudate it use the command /unpause.".to_string(), &None).await;
                                     }
                                     "/unpause" => {
-                                        let mut pause_v = pause.lock().await;
+                                        let mut pause_v = self.pause_service.lock().await;
                                         *pause_v = false;
-                                        tel.send_message(
+                                        self.telegram.lock().await.send_message(
                                             "✅ Service is reanudated.".to_string(),
                                             &None,
-                                        )
-                                            .await;
+                                        ).await;
                                     }
                                     _ => {
                                         println!("⚠️ Unknow command: {}", command_name);
@@ -142,91 +209,59 @@ impl Monitor {
         }
         return command;
     }
+}
 
-    async fn run_website_monitor(
-        tel: &mut Telegram,
-        web: &Website,
-        timeout: u64,
-        pause_reminder_timeout: u64,
-        pause: Arc<Mutex<bool>>,
-    ) {
-        let mut pause_time_ac = 0;
-        loop {
-            let pause_v = pause.lock().await;
+struct Validator {
+    telegram: Arc<Mutex<TelegramService>>,
+    web: Arc<Mutex<WebsiteService>>,
+}
 
-            if pause_time_ac >= pause_reminder_timeout {
-                tel.send_message(
-                    "⚠️ REMINDER\nService monitor is in pause.".to_string(),
-                    &None,
-                )
-                    .await;
-            }
-
-            if !*pause_v {
-                let errors = web.sumary().await;
-
-                if !errors.is_empty() {
-                    for err in errors.iter() {
-                        println!("Err: {}", err);
-                    }
-
-                    Monitor::handler_validation(errors, None, None, tel).await;
-                }
-            } else {
-                pause_time_ac += timeout;
-            }
-
-            sleep(Duration::from_secs(timeout)).await;
-        }
+impl Validator {
+    pub fn new(telegram: Arc<Mutex<TelegramService>>, web: Arc<Mutex<WebsiteService>>) -> Validator {
+        Validator { telegram, web }
     }
 
-    async fn execute_check_certs(tel: &mut Telegram, web: &Website, group_id: i64) {
-        let errs = web.certificates_vitaly().await;
-        Monitor::handler_validation(
+    async fn execute_check_certs(&self, group_id: i64) {
+        let errs = self.web.lock().await.certificates_vitaly().await;
+        self.handler_validation(
             errs,
             Some("✅ Certificates are OK.".to_string()),
             Some(vec![group_id]),
-            tel,
-        )
-            .await;
+        ).await;
     }
 
-    async fn execute_check_frontend(tel: &mut Telegram, web: &Website, group_id: i64) {
-        let errs = web.frontend_vitaly().await;
-        Monitor::handler_validation(
+    async fn execute_check_frontend(&self, group_id: i64) {
+        let errs = self.web.lock().await.frontend_vitaly().await;
+        self.handler_validation(
             errs,
             Some("✅ Frontend is working fine.".to_string()),
             Some(vec![group_id]),
-            tel,
-        )
-            .await;
+        ).await;
     }
 
-    async fn execute_check_api(tel: &mut Telegram, web: &Website, group_id: i64) {
-        let errs = web.api_vitaly().await;
-        Monitor::handler_validation(
+    pub async fn execute_check_api(&self, group_id: i64) {
+        let errs = self.web.lock().await.api_vitaly().await;
+        self.handler_validation(
             errs,
             Some("✅ Api is working fine.".to_string()),
             Some(vec![group_id]),
-            tel,
-        )
-            .await;
+        ).await;
     }
 
-    async fn handler_validation(
+    pub async fn handler_validation(
+        &self,
         errs: Vec<String>,
         success_msg: Option<String>,
         group_ids: Option<Vec<i64>>,
-        tel: &mut Telegram,
     ) {
         match success_msg {
             Some(msg) => {
-                tel.send_message(Monitor::handler_errors(&errs, msg), &group_ids)
+                self.telegram.lock().await.send_message(Validator::handler_errors(&errs, msg), &group_ids)
                     .await;
             }
             None => {
                 if !errs.is_empty() {
-                    tel.send_message(Monitor::handler_errors(&errs, "".to_string()), &group_ids)
+                    self.telegram.lock().await.send_message(Validator::handler_errors(&errs, "".to_string()), &group_ids)
                         .await;
                 }
             }
@@ -248,17 +283,17 @@ impl Monitor {
 
 #[cfg(test)]
 mod tests {
-    use super::Monitor;
+    use super::{Monitor, TelegramMonitor};
 
     #[test]
     fn extract_command_test() {
         assert_eq!(
             "/check_all",
-            Monitor::extract_command("/check_all@monitor_bc_bot".to_string())
+            TelegramMonitor::extract_command("/check_all@monitor_bc_bot".to_string())
         );
         assert_eq!(
             "/check_all",
-            Monitor::extract_command("/check_all".to_string())
+            TelegramMonitor::extract_command("/check_all".to_string())
         );
     }
 }

@@ -85,6 +85,7 @@ docker-compose up --build -d
 - [ ] Fix spaghetti code (hideous code)
 - [ ] Add test coverage (code is not tested)
 - [ ] Add argument to the script, so is possible to disable functionalities when is executed
+- [ ] Before test an url, ping the domain to see if is available
 - [ ] Add documentation when the bot gets the start command from Telegram
   - [ ] Add the documentation as a configurable parameter
 - [ ] Setting up an endpoint to be able to publish alerts by demand from the API
