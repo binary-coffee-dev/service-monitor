@@ -55,7 +55,7 @@ impl Monitor {
         let telegram_service_ref = self.telegram_service.clone();
         let web_service_ref = self.web_service.clone();
         let website_monitor = rt.spawn(async move {
-            let web_monitor = WebMonitor::new(config_ref, telegram_service_ref, web_service_ref, pause_ref.clone());
+            let web_monitor = WebMonitor::new(config_ref, telegram_service_ref, web_service_ref, pause_ref);
             web_monitor.run_website_monitor().await;
         });
 
@@ -91,6 +91,7 @@ impl WebMonitor {
         let mut pause_time_ac = 0;
         loop {
             if pause_time_ac >= self.configs.pause_reminder_timeout.unwrap() {
+                pause_time_ac = 0;
                 self.telegram.lock().await.send_message(
                     "⚠️ REMINDER\nService monitor is in pause.".to_string(),
                     &None,
