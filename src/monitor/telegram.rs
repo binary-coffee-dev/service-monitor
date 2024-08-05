@@ -104,7 +104,7 @@ impl TelegramService {
                 text: text.clone(),
                 parse_mode: "MarkdownV2".to_string(),
             };
-            let body = serde_json::to_string(&body_obj).expect("todo");
+            let body = serde_json::to_string(&body_obj).expect("Error serializing body.");
             println!("body: {}", body);
             let res_value = self
                 .retry_request(&TelegramRequest::Post {
