@@ -93,7 +93,7 @@ impl WebMonitor {
             if pause_time_ac >= self.configs.pause_reminder_timeout.unwrap() {
                 pause_time_ac = 0;
                 self.telegram.lock().await.send_message(
-                    "⚠️ REMINDER\nService monitor is in pause.".to_string(),
+                    "⚠️ REMINDER\nService monitor is in pause\\.".to_string(),
                     &None,
                 ).await;
             }
@@ -183,13 +183,13 @@ impl TelegramMonitor {
                                     "/pause" => {
                                         let mut pause_v = self.pause_service.lock().await;
                                         *pause_v = true;
-                                        self.telegram.lock().await.send_message("✅ Service is paused, if you want to reanudate it use the command /unpause.".to_string(), &None).await;
+                                        self.telegram.lock().await.send_message("✅ Service is paused, if you want to reanudate it use the command /unpause\\.".to_string(), &None).await;
                                     }
                                     "/unpause" => {
                                         let mut pause_v = self.pause_service.lock().await;
                                         *pause_v = false;
                                         self.telegram.lock().await.send_message(
-                                            "✅ Service is reanudated.".to_string(),
+                                            "✅ Service is reanudated\\.".to_string(),
                                             &None,
                                         ).await;
                                     }
@@ -228,7 +228,7 @@ impl Validator {
         let errs = self.web.lock().await.certificates_vitaly().await;
         self.handler_validation(
             errs,
-            Some("✅ Certificates are OK.".to_string()),
+            Some("✅ Certificates are OK\\.".to_string()),
             Some(vec![group_id]),
         ).await;
     }
@@ -237,7 +237,7 @@ impl Validator {
         let errs = self.web.lock().await.frontend_vitaly().await;
         self.handler_validation(
             errs,
-            Some("✅ Frontend is working fine.".to_string()),
+            Some("✅ Frontend is working fine\\.".to_string()),
             Some(vec![group_id]),
         ).await;
     }
@@ -246,7 +246,7 @@ impl Validator {
         let errs = self.web.lock().await.api_vitaly().await;
         self.handler_validation(
             errs,
-            Some("✅ Api is working fine.".to_string()),
+            Some("✅ Api is working fine\\.".to_string()),
             Some(vec![group_id]),
         ).await;
     }
