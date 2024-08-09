@@ -1,4 +1,4 @@
-FROM rust:1.70 AS build-container
+FROM rust:1.80.1 AS build-container
 
 # setup dummie projet
 RUN USER=root cargo new build_dir
