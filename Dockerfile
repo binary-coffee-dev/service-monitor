@@ -12,7 +12,7 @@ RUN cargo fetch
 COPY src ./src
 RUN cargo build --release
 
-FROM debian:buster-slim
+FROM debian:sid-slim
 
 COPY --from=build-container /build_dir/target/release/service_monitor .
 COPY config.json .
