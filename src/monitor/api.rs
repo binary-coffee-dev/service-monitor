@@ -3,9 +3,9 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
-
+use reqwest::header::AUTHORIZATION;
 use warp::Filter;
-use tokio::sync::{Mutex};
+use tokio::sync::Mutex;
 use tokio::sync::oneshot::Receiver;
 
 use crate::config::Config;
@@ -14,35 +14,30 @@ use crate::monitor::telegram::{TelegramServiceTrait};
 pub struct ApiService {
     pub configs: Config,
     pub telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
-    pub kill_receiver: Option<Arc<Mutex<Receiver<()>>>>,
 }
 
 impl ApiService {
-    pub fn new(configs: Config, telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>, kill_receiver: Option<Arc<Mutex<Receiver<()>>>>) -> ApiService {
-        ApiService { configs, telegram, kill_receiver }
+    pub fn new(configs: Config, telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>) -> ApiService {
+        ApiService { configs, telegram }
     }
 
-    pub async fn start_api(&self) {
+    pub async fn start_api(&self, kill_receiver: Option<Receiver<()>>) {
         let addr_str = format!("{}:{}", self.configs.clone().host.unwrap(), self.configs.clone().port.unwrap());
         let addr: SocketAddr = addr_str.parse().unwrap();
         println!("Server started in host: {}", addr.to_string());
 
-        match self.kill_receiver.clone() {
+        match kill_receiver {
             None => {
-                warp::serve(self.post_notification()).run(addr).await;
+                warp::serve(self.routes()).run(addr).await;
             }
-            Some(_rx) => {
-                // let rx = rx.lock().await;
-                // let (_tx, rx) = oneshot::channel::<()>();
-                let (_addr, fut) = warp::serve(self.post_notification())
+            Some(rx) => {
+                let (_addr, server) = warp::serve(self.routes())
                     .bind_with_graceful_shutdown(addr, async {
-                        // let mut a = rx.lock().await;
-                        // a.await.ok();
-                        // rx.await.ok();
+                        rx.await.ok();
                     });
-                fut.await;
+                server.await;
             }
-        }
+        };
     }
 
     pub fn routes(&self) -> impl Filter<Extract=impl warp::Reply, Error=warp::Rejection> + Clone {
@@ -56,7 +51,7 @@ impl ApiService {
         warp::path!("notification")
             .and(warp::post())
             .and(warp::body::json())
-            .and(warp::header::<String>("Authorization"))
+            .and(warp::header::<String>(AUTHORIZATION.as_str()))
             // inject auth token
             .and(warp::any().map(move || auth_token.clone()))
             // inject telegram service reference

@@ -65,8 +65,8 @@ impl Monitor {
         let telegram_service_ref = self.telegram_service.clone();
         let api_thread = rt.spawn(async move {
             if config_ref.enable_api.unwrap() {
-                let api_service = ApiService::new(config_ref, telegram_service_ref, None);
-                api_service.start_api().await;
+                let api_service = ApiService::new(config_ref, telegram_service_ref);
+                api_service.start_api(None).await;
             }
         });
 

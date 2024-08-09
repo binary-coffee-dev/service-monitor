@@ -1,4 +1,6 @@
 use async_trait::async_trait;
+use mockall::automock;
+
 use crate::config::Config;
 use crate::monitor::telegram::models::{GetMyCommandsRes, GetUpdatesRes, SendMessageBody, Update};
 
@@ -25,6 +27,7 @@ pub struct TelegramService {
     pending_messages: Vec<TelegramRequest>,
 }
 
+#[automock]
 #[async_trait]
 pub trait TelegramServiceTrait {
     async fn get_all_updates(&mut self) -> Vec<Update>;
