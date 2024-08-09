@@ -19,5 +19,5 @@ COPY config.json .
 
 RUN apt update && apt install libssl-dev ca-certificates -y
 
-CMD ["./service-monitor"]
+CMD ["./service_monitor"]
 
