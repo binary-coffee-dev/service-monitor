@@ -14,7 +14,7 @@ RUN cargo build --release
 
 FROM debian:buster-slim
 
-COPY --from=build-container /build_dir/target/release/service-monitor .
+COPY --from=build-container /build_dir/target/release/service_monitor .
 COPY config.json .
 
 RUN apt update && apt install libssl-dev ca-certificates -y
