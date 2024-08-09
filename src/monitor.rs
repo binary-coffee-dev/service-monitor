@@ -71,6 +71,7 @@ impl Monitor {
         });
 
         let _result = tokio::join!(telegram_monitor_thread, website_monitor, api_thread);
+        rt.shutdown_background();
     }
 }
 
