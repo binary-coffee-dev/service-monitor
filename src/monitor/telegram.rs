@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use crate::config::Config;
 use crate::monitor::telegram::models::{GetMyCommandsRes, GetUpdatesRes, SendMessageBody, Update};
 
@@ -24,6 +25,16 @@ pub struct TelegramService {
     pending_messages: Vec<TelegramRequest>,
 }
 
+#[async_trait]
+pub trait TelegramServiceTrait {
+    async fn get_all_updates(&mut self) -> Vec<Update>;
+    async fn send_pendings_messages(&mut self);
+    async fn send_message(&mut self, text: String, groups: &Option<Vec<i64>>);
+    async fn sync_commands(&mut self);
+    async fn set_commands(&mut self, commands: Vec<BotCommand>);
+    async fn get_commands(&mut self) -> Vec<BotCommand>;
+}
+
 impl TelegramService {
     pub fn new(configs: Config) -> TelegramService {
         let api_url = String::from(format!(
@@ -31,28 +42,10 @@ impl TelegramService {
             configs.telegram_bot_token.clone().unwrap()
         ));
         TelegramService {
-            configs,
+            configs: configs.clone(),
             api_url,
             pending_messages: Vec::new(),
         }
-    }
-
-    pub async fn get_all_updates(&mut self) -> Vec<Update> {
-        let mut updates_list = Vec::new();
-        let mut offset = 0;
-        let limit = 100;
-        loop {
-            let res = self.get_updates(limit, offset).await;
-            if let Some(mut update_res) = res {
-                if let Some(last) = update_res.result.last() {
-                    offset = (last.update_id + 1) as usize;
-                    updates_list.append(&mut update_res.result);
-                    continue;
-                }
-            }
-            break;
-        }
-        return updates_list;
     }
 
     async fn get_updates(&mut self, limit: usize, offset: usize) -> Option<GetUpdatesRes> {
@@ -75,126 +68,6 @@ impl TelegramService {
             }
         }
         return None;
-    }
-
-    pub async fn send_pendings_messages(&mut self) {
-        let mut pendins: Vec<TelegramRequest> = Vec::new();
-        self.pending_messages.push(TelegramRequest::Get {
-            url: "some".to_string(),
-        });
-        while !self.pending_messages.is_empty() {
-            pendins.push(self.pending_messages.remove(0));
-        }
-        for req in pendins.iter() {
-            if let Ok(_) = self.retry_request(req).await {}
-        }
-    }
-
-    pub async fn send_message(&mut self, text: String, groups: &Option<Vec<i64>>) {
-        let groups_ids = if let Some(ids) = groups {
-            ids.clone()
-        } else {
-            self.configs.groups.clone().unwrap()
-        };
-        let route = String::from(format!("{}/sendMessage", self.api_url));
-        println!("route: {}", route);
-        for chat_id in groups_ids {
-            let body_obj = SendMessageBody {
-                chat_id,
-                text: text.clone(),
-                parse_mode: "MarkdownV2".to_string(),
-            };
-            let body = serde_json::to_string(&body_obj).expect("Error serializing body.");
-            println!("body: {}", body);
-            let res_value = self
-                .retry_request(&TelegramRequest::Post {
-                    url: route.clone(),
-                    body,
-                    content_type: String::from("application/json"),
-                })
-                .await;
-            if let Ok(res) = res_value {
-                match res.status() {
-                    reqwest::StatusCode::OK => {}
-                    _ => {
-                        println!(
-                            "Error to send message to group: {}. res: {:?}",
-                            chat_id, res
-                        );
-                    }
-                }
-            }
-        }
-    }
-
-    pub async fn sync_commands(&mut self) {
-        let commands = vec![
-            BotCommand {
-                command: "/check_all".to_string(),
-                description: "Validate all.".to_string(),
-            },
-            BotCommand {
-                command: "/check_api".to_string(),
-                description: "Validate api.".to_string(),
-            },
-            BotCommand {
-                command: "/check_frontend".to_string(),
-                description: "Validate frontend.".to_string(),
-            },
-            BotCommand {
-                command: "/check_certs".to_string(),
-                description: "Validate certificates.".to_string(),
-            },
-            BotCommand {
-                command: "/pause".to_string(),
-                description: "Pause validations.".to_string(),
-            },
-            BotCommand {
-                command: "/unpause".to_string(),
-                description: "Unpause validations.".to_string(),
-            },
-        ];
-        self.set_commands(commands).await;
-    }
-
-    pub async fn set_commands(&mut self, commands: Vec<BotCommand>) {
-        let route = String::from(format!("{}/setMyCommands", self.api_url));
-        let body_obj = SetMyCommandsBody { commands };
-        let body = serde_json::to_string(&body_obj).expect("todo");
-        let res_value = self
-            .retry_request(&TelegramRequest::Post {
-                url: route,
-                body,
-                content_type: String::from("application/json"),
-            })
-            .await;
-        if let Ok(res) = res_value {
-            match res.status() {
-                reqwest::StatusCode::OK => {}
-                _ => {
-                    println!("Error setting up the list of commands.");
-                }
-            }
-        }
-    }
-
-    pub async fn get_commands(&mut self) -> Vec<BotCommand> {
-        let route = String::from(format!("{}/getMyCommands", self.api_url));
-        let res = self
-            .retry_request(&TelegramRequest::Get { url: route })
-            .await;
-        if let Ok(bot_res) = res {
-            match bot_res.status() {
-                reqwest::StatusCode::OK => {
-                    let bot_commands_res = bot_res.text().await.unwrap();
-                    let bot_commands: GetMyCommandsRes = serde_json::from_str(&bot_commands_res)
-                        .expect("Error deserializing json response from string.");
-                    return bot_commands.result;
-                }
-                _ => {}
-            }
-        }
-        return Vec::new();
     }
 
     async fn retry_request(&mut self, req: &TelegramRequest) -> Result<reqwest::Response, String> {
@@ -271,5 +144,146 @@ impl TelegramService {
     async fn get_request(&self, url: String) -> Result<reqwest::Response, reqwest::Error> {
         let client = reqwest::Client::new();
         return client.get(url.to_owned()).send().await;
+    }
+}
+
+#[async_trait]
+impl TelegramServiceTrait for TelegramService {
+    async fn get_all_updates(&mut self) -> Vec<Update> {
+        let mut updates_list = Vec::new();
+        let mut offset = 0;
+        let limit = 100;
+        loop {
+            let res = self.get_updates(limit, offset).await;
+            if let Some(mut update_res) = res {
+                if let Some(last) = update_res.result.last() {
+                    offset = (last.update_id + 1) as usize;
+                    updates_list.append(&mut update_res.result);
+                    continue;
+                }
+            }
+            break;
+        }
+        return updates_list;
+    }
+
+    async fn send_pendings_messages(&mut self) {
+        let mut pendins: Vec<TelegramRequest> = Vec::new();
+        self.pending_messages.push(TelegramRequest::Get {
+            url: "some".to_string(),
+        });
+        while !self.pending_messages.is_empty() {
+            pendins.push(self.pending_messages.remove(0));
+        }
+        for req in pendins.iter() {
+            if let Ok(_) = self.retry_request(req).await {}
+        }
+    }
+
+    async fn send_message(&mut self, text: String, groups: &Option<Vec<i64>>) {
+        let groups_ids = if let Some(ids) = groups {
+            ids.clone()
+        } else {
+            self.configs.groups.clone().unwrap()
+        };
+        let route = String::from(format!("{}/sendMessage", self.api_url));
+        println!("route: {}", route);
+        for chat_id in groups_ids {
+            let body_obj = SendMessageBody {
+                chat_id,
+                text: text.clone(),
+                parse_mode: "MarkdownV2".to_string(),
+            };
+            let body = serde_json::to_string(&body_obj).expect("Error serializing body.");
+            println!("body: {}", body);
+            let res_value = self
+                .retry_request(&TelegramRequest::Post {
+                    url: route.clone(),
+                    body,
+                    content_type: String::from("application/json"),
+                })
+                .await;
+            if let Ok(res) = res_value {
+                match res.status() {
+                    reqwest::StatusCode::OK => {}
+                    _ => {
+                        println!(
+                            "Error to send message to group: {}. res: {:?}",
+                            chat_id, res
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    async fn sync_commands(&mut self) {
+        let commands = vec![
+            BotCommand {
+                command: "/check_all".to_string(),
+                description: "Validate all.".to_string(),
+            },
+            BotCommand {
+                command: "/check_api".to_string(),
+                description: "Validate api.".to_string(),
+            },
+            BotCommand {
+                command: "/check_frontend".to_string(),
+                description: "Validate frontend.".to_string(),
+            },
+            BotCommand {
+                command: "/check_certs".to_string(),
+                description: "Validate certificates.".to_string(),
+            },
+            BotCommand {
+                command: "/pause".to_string(),
+                description: "Pause validations.".to_string(),
+            },
+            BotCommand {
+                command: "/unpause".to_string(),
+                description: "Unpause validations.".to_string(),
+            },
+        ];
+        self.set_commands(commands).await;
+    }
+
+    async fn set_commands(&mut self, commands: Vec<BotCommand>) {
+        let route = String::from(format!("{}/setMyCommands", self.api_url));
+        let body_obj = SetMyCommandsBody { commands };
+        let body = serde_json::to_string(&body_obj).expect("todo");
+        let res_value = self
+            .retry_request(&TelegramRequest::Post {
+                url: route,
+                body,
+                content_type: String::from("application/json"),
+            })
+            .await;
+        if let Ok(res) = res_value {
+            match res.status() {
+                reqwest::StatusCode::OK => {}
+                _ => {
+                    println!("Error setting up the list of commands.");
+                }
+            }
+        }
+    }
+
+    async fn get_commands(&mut self) -> Vec<BotCommand> {
+        let route = String::from(format!("{}/getMyCommands", self.api_url));
+        let res = self
+            .retry_request(&TelegramRequest::Get { url: route })
+            .await;
+        if let Ok(bot_res) = res {
+            match bot_res.status() {
+                reqwest::StatusCode::OK => {
+                    let bot_commands_res = bot_res.text().await.unwrap();
+                    let bot_commands: GetMyCommandsRes = serde_json::from_str(&bot_commands_res)
+                        .expect("Error deserializing json response from string.");
+                    return bot_commands.result;
+                }
+                _ => {}
+            }
+        }
+        return Vec::new();
     }
 }

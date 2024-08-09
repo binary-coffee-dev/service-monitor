@@ -1,16 +1,23 @@
 [package]
-name = "service-monitor"
+name = "service_monitor"
 version = "0.2.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "service_monitor"
+path = "src/main.rs"
+
+[lib]
+name = "sm"
+path = "src/lib.rs"
 
 [dependencies]
 base64 = "0.22.0"
 warp = "0.3.6"
+futures-util = "0.3.30"
 reqwest = { version = "0.11", features = ["json"] }
 tokio = { version = "1.28.2", features = ["full"] }
 serde = { version = "1.0.104", features = ["derive"] }
 serde_json = "1.0"
+async-trait = "0.1.81"
 checkssl = "0.2.0"
-

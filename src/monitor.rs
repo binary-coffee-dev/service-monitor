@@ -7,6 +7,7 @@ use tokio::time::sleep;
 use crate::config::Config;
 use crate::monitor::api::ApiService;
 use crate::monitor::telegram::TelegramService;
+use crate::monitor::telegram::TelegramServiceTrait;
 use crate::monitor::website::WebsiteService;
 
 pub mod api;
@@ -62,14 +63,14 @@ impl Monitor {
         // start api service
         let config_ref = self.configs.clone();
         let telegram_service_ref = self.telegram_service.clone();
-        let api_service = rt.spawn(async move {
+        let api_thread = rt.spawn(async move {
             if config_ref.enable_api.unwrap() {
-                let api_service = ApiService::new(config_ref, telegram_service_ref);
-                api_service.start_api().await
+                let api_service = ApiService::new(config_ref, telegram_service_ref, None);
+                api_service.start_api().await;
             }
         });
 
-        let _result = tokio::join!(telegram_monitor_thread, website_monitor, api_service);
+        let _result = tokio::join!(telegram_monitor_thread, website_monitor, api_thread);
     }
 }
 
