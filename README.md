@@ -121,6 +121,7 @@ Authorization: Basic dGVzdA==
 
 ## toDo
 
+- [ ] Check https://docs.rs/warp/latest/warp/test/index.html to improve integration test
 - [ ] Add help, and support for application arguments.
 - [ ] Add integration tests (code is not well tested)
 - [ ] Allow to define the default route for the configuration file
