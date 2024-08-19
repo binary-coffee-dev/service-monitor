@@ -5,5 +5,7 @@ services:
     build:
       context: .
     restart: always
+    volumes:
+      - ./config.json:/config.json
     ports:
       - "127.0.0.1:6565:6565"

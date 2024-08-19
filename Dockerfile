@@ -15,9 +15,7 @@ RUN cargo build --release
 FROM debian:sid-slim
 
 COPY --from=build-container /build_dir/target/release/service_monitor .
-COPY config.json .
 
 RUN apt update && apt install libssl-dev ca-certificates -y
 
 CMD ["./service_monitor"]
-
