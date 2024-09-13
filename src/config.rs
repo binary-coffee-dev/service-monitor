@@ -7,8 +7,8 @@ use crate::monitor::website::{Get, RouteTest};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {
-    pub telegram_bot_token: Option<String>,
-    pub groups: Option<Vec<i64>>,
+    // service monitor
+    pub enable_service_monitor: Option<bool>,
     pub api_tests: Option<Vec<RouteTest>>,
     pub frontend_tests: Option<Vec<RouteTest>>,
     pub ssl_tests: Option<Vec<Get>>,
@@ -16,11 +16,16 @@ pub struct Config {
     pub pause_reminder_timeout: Option<u64>,
     pub times_to_retry: Option<i64>,
 
+    // telegram
+    pub enable_telegram: Option<bool>,
+    pub telegram_bot_token: Option<String>,
+    pub groups: Option<Vec<i64>>,
+
     // api
+    pub enable_api: Option<bool>,
     pub host: Option<String>,
     pub port: Option<u32>,
     pub api_token: Option<String>,
-    pub enable_api: Option<bool>,
 }
 
 impl Config {
@@ -59,8 +64,9 @@ impl Config {
 
     fn merge_configs_with_defalt(mut config: Config) -> Config {
         let default = Config::default();
-        if config.groups.is_none() {
-            config.groups = default.groups;
+        // service monitor
+        if config.enable_service_monitor.is_none() {
+            config.enable_service_monitor = default.enable_service_monitor;
         }
         if config.api_tests.is_none() {
             config.api_tests = default.api_tests;
@@ -80,6 +86,14 @@ impl Config {
         if config.times_to_retry.is_none() {
             config.times_to_retry = default.times_to_retry;
         }
+        // telegram
+        if config.enable_telegram.is_none() {
+            config.enable_telegram = default.enable_telegram;
+        }
+        if config.groups.is_none() {
+            config.groups = default.groups;
+        }
+        // api
         if config.host.is_none() {
             config.host = default.host;
         }
@@ -97,18 +111,23 @@ impl Config {
 
     fn default() -> Config {
         Config {
-            telegram_bot_token: None,
-            groups: Some(Vec::new()),
+            // service monitor
+            enable_service_monitor: Some(true),
             api_tests: Some(Vec::new()),
             frontend_tests: Some(Vec::new()),
             website_monitor_timeout: Some(20),
             ssl_tests: Some(Vec::new()),
             pause_reminder_timeout: Some(86400),
             times_to_retry: Some(5),
+            // telegram
+            enable_telegram: Some(true),
+            telegram_bot_token: None,
+            groups: Some(Vec::new()),
+            // api
             host: Some("127.0.0.1".to_string()),
             port: Some(5353),
             api_token: Some("service_token".to_string()),
-            enable_api: Some(true)
+            enable_api: Some(true),
         }
     }
 }
@@ -120,14 +139,19 @@ mod tests {
     #[test]
     fn merge_configs_test() {
         let mut config = Config {
-            telegram_bot_token: Some("asdfasdf.asdfasdf".to_string()),
-            groups: None,
+            // service monitor
+            enable_service_monitor: None,
             api_tests: None,
             frontend_tests: None,
             ssl_tests: None,
             website_monitor_timeout: None,
             pause_reminder_timeout: None,
             times_to_retry: None,
+            // telegram
+            enable_telegram: None,
+            telegram_bot_token: Some("asdfasdf.asdfasdf".to_string()),
+            groups: None,
+            // api
             host: None,
             port: None,
             api_token: None,
@@ -136,14 +160,19 @@ mod tests {
 
         config = Config::merge_configs_with_defalt(config);
 
-        assert!(config.telegram_bot_token.is_some());
-        assert!(config.groups.is_some());
+        // service monitor
+        assert!(config.enable_service_monitor.is_some());
         assert!(config.api_tests.is_some());
         assert!(config.frontend_tests.is_some());
         assert!(config.ssl_tests.is_some());
         assert!(config.website_monitor_timeout.is_some());
         assert!(config.pause_reminder_timeout.is_some());
         assert!(config.times_to_retry.is_some());
+        // telegram
+        assert!(config.enable_telegram.is_some());
+        assert!(config.telegram_bot_token.is_some());
+        assert!(config.groups.is_some());
+        // api
         assert!(config.host.is_some());
         assert!(config.port.is_some());
         assert!(config.api_token.is_some());

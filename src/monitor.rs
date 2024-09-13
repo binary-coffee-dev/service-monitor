@@ -43,13 +43,16 @@ impl Monitor {
         let pause_ref = pause.clone();
         let telegram_service_ref = self.telegram_service.clone();
         let web_service_ref = self.web_service.clone();
+        let config_ref = self.configs.clone();
         let telegram_monitor_thread = rt.spawn(async move {
-            let telegram_monitor = TelegramMonitor::new(
-                telegram_service_ref,
-                web_service_ref,
-                pause_ref,
-            );
-            telegram_monitor.start_monitoring().await
+            if config_ref.enable_telegram.unwrap() {
+                let telegram_monitor = TelegramMonitor::new(
+                    telegram_service_ref,
+                    web_service_ref,
+                    pause_ref,
+                );
+                telegram_monitor.start_monitoring().await
+            }
         });
 
         // start web monitoring
@@ -58,8 +61,10 @@ impl Monitor {
         let telegram_service_ref = self.telegram_service.clone();
         let web_service_ref = self.web_service.clone();
         let website_monitor = rt.spawn(async move {
-            let web_monitor = WebMonitor::new(config_ref, telegram_service_ref, web_service_ref, pause_ref);
-            web_monitor.run_website_monitor().await;
+            if config_ref.enable_service_monitor.unwrap() {
+                let web_monitor = WebMonitor::new(config_ref, telegram_service_ref, web_service_ref, pause_ref);
+                web_monitor.run_website_monitor().await;
+            }
         });
 
         // start api service

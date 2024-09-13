@@ -14,18 +14,23 @@ use sm::monitor::telegram::{MockTelegramServiceTrait, TelegramServiceTrait};
 
 fn get_default_test_config(port: Option<u32>) -> Config {
     Config {
-        telegram_bot_token: None,
-        groups: Some(Vec::new()),
+        // service monitor
+        enable_service_monitor: Some(false),
         api_tests: Some(Vec::new()),
         frontend_tests: Some(Vec::new()),
         website_monitor_timeout: Some(20),
         ssl_tests: Some(Vec::new()),
         pause_reminder_timeout: Some(86400),
         times_to_retry: Some(5),
+        // telegram
+        enable_telegram: Some(false),
+        telegram_bot_token: None,
+        groups: Some(Vec::new()),
+        // api
+        enable_api: Some(true),
         host: Some("127.0.0.1".to_string()),
         port,
         api_token: Some("test".to_string()),
-        enable_api: Some(true),
     }
 }
 
