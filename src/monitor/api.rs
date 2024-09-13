@@ -10,6 +10,7 @@ use tokio::sync::oneshot::Receiver;
 
 use crate::config::Config;
 use crate::monitor::telegram::{TelegramServiceTrait};
+use crate::monitor::utils::ToMarkdown;
 
 pub struct ApiService {
     pub configs: Config,
@@ -66,7 +67,9 @@ impl ApiService {
                 println!("Notification request: {:?}", body);
 
                 // send message to telegram
-                telegram_ref.lock().await.send_message(body.get("message").unwrap().to_string(), &None).await;
+                telegram_ref.lock().await.send_message(
+                    body.get("message").unwrap().to_string().parse_text_to_markdown(), &None,
+                ).await;
 
                 // 200 response
                 warp::reply::with_status("ACCEPTED", warp::http::StatusCode::ACCEPTED)
@@ -85,14 +88,14 @@ impl ApiService {
             return false;
         }
 
-        return match BASE64_STANDARD.decode(&base64_token[e.unwrap()..].trim()) {
+        match BASE64_STANDARD.decode(&base64_token[e.unwrap()..].trim()) {
             Ok(token) => {
                 api_token.eq(&String::from_utf8(token).unwrap())
             }
             Err(_) => {
                 false
             }
-        };
+        }
     }
 }
 

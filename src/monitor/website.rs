@@ -5,6 +5,7 @@ use checkssl::CheckSSL;
 use reqwest::Client;
 
 use crate::config::Config;
+use crate::monitor::utils::ToMarkdown;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Post {
@@ -34,17 +35,17 @@ impl WebsiteService {
         WebsiteService { configs }
     }
 
-    pub async fn sumary(&self) -> Vec<String> {
+    pub async fn summary(&self) -> Vec<String> {
         let mut errors = Vec::new();
 
-        errors.append(&mut self.api_vitaly().await);
+        errors.append(&mut self.api_vitally().await);
         errors.append(&mut self.frontend_vitaly().await);
         errors.append(&mut self.certificates_vitaly().await);
 
-        return errors;
+        errors
     }
 
-    pub async fn api_vitaly(&self) -> Vec<String> {
+    pub async fn api_vitally(&self) -> Vec<String> {
         let mut ret = Vec::new();
         let client = Client::new();
         if let Some(ref api_tests) = self.configs.api_tests {
@@ -52,7 +53,7 @@ impl WebsiteService {
                 self.make_request(&test, &client, &mut ret).await;
             }
         }
-        return ret;
+        ret
     }
 
     pub async fn frontend_vitaly(&self) -> Vec<String> {
@@ -63,7 +64,7 @@ impl WebsiteService {
                 self.make_request(&test, &client, &mut ret).await;
             }
         }
-        return ret;
+        ret
     }
 
     pub async fn certificates_vitaly(&self) -> Vec<String> {
@@ -77,14 +78,14 @@ impl WebsiteService {
                         println!("Cert for url [{}] is ok.", url);
                     }
                     Err(_) => {
-                        let msg = format!("❌ Error with cert, url: {}.", url).to_string();
+                        let msg = format!("❌ Error with cert, url: {}.", url).parse_text_to_markdown();
                         println!("{msg}");
                         ret.push(msg);
                     }
                 };
             }
         }
-        return ret;
+        ret
     }
 
     async fn make_request(&self, test: &RouteTest, client: &Client, ret: &mut Vec<String>) {
@@ -127,14 +128,14 @@ impl WebsiteService {
                             "❌ The url POST [{}] fails and return an status {}.",
                             url,
                             res.status()
-                        ));
+                        ).parse_text_to_markdown());
                         break;
                     }
                 },
                 Err(err) => {
                     if times >= times_to_retry {
                         print!("Error: {:?}", err);
-                        ret.push(format!("❌ The url POST [{}] fails.", url,));
+                        ret.push(format!("❌ The url POST [{}] fails.", url, ).parse_text_to_markdown());
                         break;
                     }
                 }
@@ -160,14 +161,14 @@ impl WebsiteService {
                             "❌ The url GET [{}] fails and return an status {}.",
                             url,
                             res.status()
-                        ));
+                        ).parse_text_to_markdown());
                         break;
                     }
                 },
                 Err(err) => {
                     if times >= times_to_retry {
                         print!("Error: {:?}", err);
-                        ret.push(format!("❌ The url GET [{}] fails.", url,));
+                        ret.push(format!("❌ The url GET [{}] fails.", url).parse_text_to_markdown());
                         break;
                     }
                 }

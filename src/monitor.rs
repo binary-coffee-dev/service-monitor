@@ -8,11 +8,13 @@ use crate::config::Config;
 use crate::monitor::api::ApiService;
 use crate::monitor::telegram::TelegramService;
 use crate::monitor::telegram::TelegramServiceTrait;
+use crate::monitor::utils::ToMarkdown;
 use crate::monitor::website::WebsiteService;
 
 pub mod api;
 pub mod telegram;
 pub mod website;
+pub mod utils;
 
 pub struct Monitor {
     configs: Config,
@@ -95,14 +97,14 @@ impl WebMonitor {
             if pause_time_ac >= self.configs.pause_reminder_timeout.unwrap() {
                 pause_time_ac = 0;
                 self.telegram.lock().await.send_message(
-                    "⚠️ REMINDER\nService monitor is in pause\\.".to_string(),
+                    "⚠️ REMINDER\nService monitor is in pause.".to_string().parse_text_to_markdown(),
                     &None,
                 ).await;
             }
 
             let pause_v = self.pause_service.lock().await;
             if !*pause_v {
-                let errors = self.web.lock().await.sumary().await;
+                let errors = self.web.lock().await.summary().await;
 
                 if !errors.is_empty() {
                     for err in errors.iter() {
@@ -185,13 +187,14 @@ impl TelegramMonitor {
                                     "/pause" => {
                                         let mut pause_v = self.pause_service.lock().await;
                                         *pause_v = true;
-                                        self.telegram.lock().await.send_message("✅ Service is paused, if you want to reanudate it use the command /unpause\\.".to_string(), &None).await;
+                                        self.telegram.lock().await
+                                            .send_message("✅ Service is paused, if you want to reanudate it use the command /unpause.".to_string().parse_text_to_markdown(), &None).await;
                                     }
                                     "/unpause" => {
                                         let mut pause_v = self.pause_service.lock().await;
                                         *pause_v = false;
                                         self.telegram.lock().await.send_message(
-                                            "✅ Service is reanudated\\.".to_string(),
+                                            "✅ Service is reanudated.".to_string().parse_text_to_markdown(),
                                             &None,
                                         ).await;
                                     }
@@ -212,7 +215,7 @@ impl TelegramMonitor {
         if let Some(index) = command.find('@') {
             return command[0..index].to_string();
         }
-        return command;
+        command
     }
 }
 
@@ -230,7 +233,7 @@ impl Validator {
         let errs = self.web.lock().await.certificates_vitaly().await;
         self.handler_validation(
             errs,
-            Some("✅ Certificates are OK\\.".to_string()),
+            Some("✅ Certificates are OK.".to_string().parse_text_to_markdown()),
             Some(vec![group_id]),
         ).await;
     }
@@ -239,16 +242,16 @@ impl Validator {
         let errs = self.web.lock().await.frontend_vitaly().await;
         self.handler_validation(
             errs,
-            Some("✅ Frontend is working fine\\.".to_string()),
+            Some("✅ Frontend is working fine.".to_string().parse_text_to_markdown()),
             Some(vec![group_id]),
         ).await;
     }
 
     pub async fn execute_check_api(&self, group_id: i64) {
-        let errs = self.web.lock().await.api_vitaly().await;
+        let errs = self.web.lock().await.api_vitally().await;
         self.handler_validation(
             errs,
-            Some("✅ Api is working fine\\.".to_string()),
+            Some("✅ Api is working fine.".to_string().parse_text_to_markdown()),
             Some(vec![group_id]),
         ).await;
     }
@@ -282,7 +285,7 @@ impl Validator {
             }
             return report;
         }
-        return default;
+        default
     }
 }
 
