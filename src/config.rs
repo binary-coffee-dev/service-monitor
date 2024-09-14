@@ -137,6 +137,18 @@ mod tests {
     use super::Config;
 
     #[test]
+    fn deserialize_api_endpoints_test() {
+        let json_example = "{\"enable_api\": true, \"host\": \"127.0.0.1\", \"port\": 6565, \"api_token\": \"example_token\", \"telegram_bot_token\": \"123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11\", \"groups\": [149770819], \"website_monitor_timeout\": 20, \"api_tests\": [{\"type\": \"POST\", \"url\": \"https://api.binarycoffee.dev/graphql\", \"body\": \"{}\", \"content_type\": \"application/json\"}, {\"type\": \"GET\", \"url\": \"https://api.binarycoffee.dev/api/sitemap\"}], \"frontend_tests\": [{\"type\": \"GET\", \"url\": \"https://binarycoffee.dev\"}, {\"type\": \"GET\", \"url\": \"https://binarycoffee.dev/post/bienvenidos-al-blog-binary-coffeermdcl\"}, {\"type\": \"GET\", \"url\": \"https://binarycoffee.dev/users/guille\"}], \"ssl_tests\": [{\"url\": \"binarycoffee.dev\"}, {\"url\": \"api.binarycoffee.dev\"}]}".to_string();
+        let configs = Config::merge_configs_with_defalt(
+            serde_json::from_str(&json_example)
+                .expect("Error deserializing configuration json file."),
+        );
+
+        assert!(configs.api_tests.is_some());
+        assert_eq!(configs.api_tests.unwrap().len(), 2);
+    }
+
+    #[test]
     fn merge_configs_test() {
         let mut config = Config {
             // service monitor
