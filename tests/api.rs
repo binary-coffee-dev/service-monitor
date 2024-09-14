@@ -44,7 +44,7 @@ fn start_api_service(config: Config, telegram_service: Arc<Mutex<dyn TelegramSer
         println!("API service finished");
     });
 
-    return (api_thread, rt, tx);
+    (api_thread, rt, tx)
 }
 
 fn get_url(config: Config) -> String {

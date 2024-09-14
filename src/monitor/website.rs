@@ -9,14 +9,14 @@ use crate::monitor::utils::ToMarkdown;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Post {
-    url: String,
-    body: String,
-    content_type: String,
+    pub url: String,
+    pub body: String,
+    pub content_type: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Get {
-    url: String,
+    pub url: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

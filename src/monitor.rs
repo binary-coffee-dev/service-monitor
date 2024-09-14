@@ -18,20 +18,29 @@ pub mod utils;
 
 pub struct Monitor {
     configs: Config,
-    telegram_service: Arc<Mutex<TelegramService>>,
+    telegram_service: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
     web_service: Arc<Mutex<WebsiteService>>,
 }
 
 /// This class introduces three key services: Telegram integration for communication, website
 /// monitoring for surveillance, and an API service for streamlined data access.
 impl Monitor {
-    pub fn new(configs: Config) -> Monitor {
-        let telegram = Arc::new(Mutex::new(TelegramService::new(configs.clone())));
+    pub fn new(configs: Config, telegram_ins: Option<Arc<Mutex<dyn TelegramServiceTrait + Send>>>) -> Monitor {
         let web = Arc::new(Mutex::new(WebsiteService::new(configs.clone())));
-        Monitor {
-            configs: configs.clone(),
-            web_service: web.clone(),
-            telegram_service: telegram.clone(),
+        if telegram_ins.is_none() {
+            // telegram = Arc::new(Mutex::new(TelegramService::new(configs.clone())));
+            Monitor {
+                configs: configs.clone(),
+                web_service: web.clone(),
+                telegram_service: Arc::new(Mutex::new(TelegramService::new(configs))),
+            }
+        } else {
+            // telegram = telegram_ins.unwrap();
+            Monitor {
+                configs: configs,
+                web_service: web.clone(),
+                telegram_service: telegram_ins.unwrap(),
+            }
         }
     }
 
@@ -84,14 +93,14 @@ impl Monitor {
 
 struct WebMonitor {
     configs: Config,
-    telegram: Arc<Mutex<TelegramService>>,
+    telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
     web: Arc<Mutex<WebsiteService>>,
     pause_service: Arc<Mutex<bool>>,
     validator: Arc<Mutex<Validator>>,
 }
 
 impl WebMonitor {
-    pub fn new(configs: Config, telegram: Arc<Mutex<TelegramService>>, web: Arc<Mutex<WebsiteService>>, pause_service: Arc<Mutex<bool>>) -> WebMonitor {
+    pub fn new(configs: Config, telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>, web: Arc<Mutex<WebsiteService>>, pause_service: Arc<Mutex<bool>>) -> WebMonitor {
         let validator = Arc::new(Mutex::new(Validator::new(telegram.clone(), web.clone())));
         WebMonitor { configs, telegram, web, pause_service, validator }
     }
@@ -128,13 +137,13 @@ impl WebMonitor {
 }
 
 struct TelegramMonitor {
-    telegram: Arc<Mutex<TelegramService>>,
+    telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
     pause_service: Arc<Mutex<bool>>,
     validator: Arc<Mutex<Validator>>,
 }
 
 impl TelegramMonitor {
-    pub fn new(telegram: Arc<Mutex<TelegramService>>, web: Arc<Mutex<WebsiteService>>, pause_service: Arc<Mutex<bool>>) -> TelegramMonitor {
+    pub fn new(telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>, web: Arc<Mutex<WebsiteService>>, pause_service: Arc<Mutex<bool>>) -> TelegramMonitor {
         let validator = Arc::new(Mutex::new(Validator::new(telegram.clone(), web.clone())));
         TelegramMonitor { telegram, pause_service, validator }
     }
@@ -225,12 +234,12 @@ impl TelegramMonitor {
 }
 
 struct Validator {
-    telegram: Arc<Mutex<TelegramService>>,
+    telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
     web: Arc<Mutex<WebsiteService>>,
 }
 
 impl Validator {
-    pub fn new(telegram: Arc<Mutex<TelegramService>>, web: Arc<Mutex<WebsiteService>>) -> Validator {
+    pub fn new(telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>, web: Arc<Mutex<WebsiteService>>) -> Validator {
         Validator { telegram, web }
     }
 
