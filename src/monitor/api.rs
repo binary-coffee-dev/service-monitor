@@ -101,7 +101,14 @@ impl ApiService {
 
 #[cfg(test)]
 mod tests {
+    use base64::Engine;
+    use base64::prelude::BASE64_STANDARD;
     use crate::monitor::api::ApiService;
+
+    #[test]
+    fn validate_base64_test() {
+        assert_eq!(BASE64_STANDARD.encode("test"), "dGVzdA==");
+    }
 
     #[test]
     fn validate_auth_token_test() {
