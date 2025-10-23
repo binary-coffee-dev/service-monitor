@@ -8,6 +8,7 @@ use crate::monitor::telegram::TelegramService;
 use crate::monitor::telegram::TelegramServiceTrait;
 use crate::monitor::website::WebsiteService;
 use crate::telegram_monitor::TelegramMonitor;
+use crate::validator::Validator;
 use crate::web_monitor::WebMonitor;
 
 pub mod api;
@@ -17,8 +18,7 @@ pub mod utils;
 
 pub struct Monitor {
     configs: Config,
-    telegram_service: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
-    web_service: Arc<Mutex<WebsiteService>>,
+    validator: Arc<Mutex<Validator>>,
 }
 
 /// This class introduces three key services: Telegram integration for communication, website
@@ -26,20 +26,21 @@ pub struct Monitor {
 impl Monitor {
     pub fn new(configs: Config, telegram_ins: Option<Arc<Mutex<dyn TelegramServiceTrait + Send>>>) -> Monitor {
         let web = Arc::new(Mutex::new(WebsiteService::new(configs.clone())));
+        let validator;
         if telegram_ins.is_none() {
-            // telegram = Arc::new(Mutex::new(TelegramService::new(configs.clone())));
-            Monitor {
-                configs: configs.clone(),
-                web_service: web.clone(),
-                telegram_service: Arc::new(Mutex::new(TelegramService::new(configs))),
-            }
+            validator = Arc::new(Mutex::new(Validator::new(
+                Arc::new(Mutex::new(TelegramService::new(configs.clone()))),
+                web.clone(),
+            )));
         } else {
-            // telegram = telegram_ins.unwrap();
-            Monitor {
-                configs,
-                web_service: web.clone(),
-                telegram_service: telegram_ins.unwrap(),
-            }
+            validator = Arc::new(Mutex::new(Validator::new(
+                telegram_ins.unwrap(),
+                web.clone(),
+            )));
+        }
+        Monitor {
+            configs,
+            validator,
         }
     }
 
@@ -49,14 +50,12 @@ impl Monitor {
 
         // start telegram command checker
         let pause_ref = pause.clone();
-        let telegram_service_ref = self.telegram_service.clone();
-        let web_service_ref = self.web_service.clone();
         let config_ref = self.configs.clone();
+        let validator_ref = self.validator.clone();
         let telegram_monitor_thread = rt.spawn(async move {
             if config_ref.enable_telegram.unwrap() {
                 let telegram_monitor = TelegramMonitor::new(
-                    telegram_service_ref,
-                    web_service_ref,
+                    validator_ref,
                     pause_ref,
                 );
                 telegram_monitor.start_monitoring().await;
@@ -67,21 +66,20 @@ impl Monitor {
         // start web monitoring
         let config_ref = self.configs.clone();
         let pause_ref = pause.clone();
-        let telegram_service_ref = self.telegram_service.clone();
-        let web_service_ref = self.web_service.clone();
+        let validator_ref = self.validator.clone();
         let website_monitor = rt.spawn(async move {
             if config_ref.enable_service_monitor.unwrap() {
-                let web_monitor = WebMonitor::new(config_ref, telegram_service_ref, web_service_ref, pause_ref);
+                let web_monitor = WebMonitor::new(config_ref, validator_ref, pause_ref);
                 web_monitor.run_website_monitor().await;
             }
         });
 
         // start api service
         let config_ref = self.configs.clone();
-        let telegram_service_ref = self.telegram_service.clone();
+        let validator_ref = self.validator.clone();
         let api_thread = rt.spawn(async move {
             if config_ref.enable_api.unwrap() {
-                let api_service = ApiService::new(config_ref, telegram_service_ref);
+                let api_service = ApiService::new(config_ref, validator_ref);
                 api_service.start_api(None).await;
             }
         });

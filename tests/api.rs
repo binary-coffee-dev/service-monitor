@@ -1,15 +1,15 @@
-use std::collections::HashMap;
-use std::sync::Arc;
 use mockall::predicate::eq;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use reqwest::StatusCode;
+use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::runtime::Runtime;
-use tokio::sync::Mutex;
 use tokio::sync::oneshot::Sender;
+use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
-use sm::monitor::api::ApiService;
 use sm::config::Config;
+use sm::monitor::api::ApiService;
 use sm::monitor::telegram::{MockTelegramServiceTrait, TelegramServiceTrait};
 
 fn get_default_test_config(port: Option<u32>) -> Config {
@@ -34,12 +34,21 @@ fn get_default_test_config(port: Option<u32>) -> Config {
     }
 }
 
-fn start_api_service(config: Config, telegram_service: Arc<Mutex<dyn TelegramServiceTrait + Send>>) -> (JoinHandle<()>, Runtime, Sender<()>) {
+fn start_api_service(
+    config: Config,
+    telegram_service: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
+) -> (JoinHandle<()>, Runtime, Sender<()>) {
     let rt = Runtime::new().unwrap();
 
     let (tx, rx) = tokio::sync::oneshot::channel();
     let api_thread = rt.spawn(async move {
-        let api_service = ApiService::new(config, telegram_service);
+        let validator = Arc::new(Mutex::new(sm::validator::Validator::new(
+            telegram_service.clone(),
+            Arc::new(Mutex::new(sm::monitor::website::WebsiteService::new(
+                config.clone(),
+            ))),
+        )));
+        let api_service = ApiService::new(config, validator);
         api_service.start_api(Some(rx)).await;
         println!("API service finished");
     });
@@ -66,13 +75,19 @@ async fn test_send_notification_flow() {
     let (api_thread, rt, tx) = start_api_service(config_ref.clone(), telegram_service_ref.clone());
 
     // assert that telegram service send_message method was called
-    telegram_service_share.lock().await.expect_send_message()
+    telegram_service_share
+        .lock()
+        .await
+        .expect_send_message()
         .with(eq(expected_message.clone()), eq(None))
         .times(1)
         .return_once(|_, _| {});
 
     // call notification endpoint
-    let body: HashMap<String, String> = [("message".to_string(), expected_message.clone())].iter().cloned().collect();
+    let body: HashMap<String, String> = [("message".to_string(), expected_message.clone())]
+        .iter()
+        .cloned()
+        .collect();
     let response = reqwest::Client::new()
         .post(get_url(config_ref.clone()))
         .header(CONTENT_TYPE, "application/json")
@@ -82,7 +97,11 @@ async fn test_send_notification_flow() {
         .await
         .expect("Failed to send notification");
     println!("Response: {:?}", response);
-    assert_eq!(response.status(), StatusCode::ACCEPTED, "Status code is not 202");
+    assert_eq!(
+        response.status(),
+        StatusCode::ACCEPTED,
+        "Status code is not 202"
+    );
 
     // stop api service
     println!("Sending kill signal to api service");
@@ -100,11 +119,16 @@ async fn test_authorization_api_fail() {
     let expected_message = "test message sent to telegram".to_string();
 
     // start api service
-    let (api_thread, rt, tx) =
-        start_api_service(config_ref.clone(), Arc::new(Mutex::new(MockTelegramServiceTrait::new())));
+    let (api_thread, rt, tx) = start_api_service(
+        config_ref.clone(),
+        Arc::new(Mutex::new(MockTelegramServiceTrait::new())),
+    );
 
     // call notification endpoint
-    let body: HashMap<String, String> = [("message".to_string(), expected_message.clone())].iter().cloned().collect();
+    let body: HashMap<String, String> = [("message".to_string(), expected_message.clone())]
+        .iter()
+        .cloned()
+        .collect();
     let response = reqwest::Client::new()
         .post(get_url(config_ref.clone()))
         .header(CONTENT_TYPE, "application/json")
@@ -114,7 +138,11 @@ async fn test_authorization_api_fail() {
         .await
         .expect("Failed to send notification");
     println!("Response: {:?}", response);
-    assert_eq!(response.status(), StatusCode::FORBIDDEN, "Status code is not 403");
+    assert_eq!(
+        response.status(),
+        StatusCode::FORBIDDEN,
+        "Status code is not 403"
+    );
 
     // stop api service
     println!("Sending kill signal to api service");

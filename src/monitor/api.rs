@@ -1,29 +1,33 @@
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
+use reqwest::header::AUTHORIZATION;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use base64::Engine;
-use base64::prelude::BASE64_STANDARD;
-use reqwest::header::AUTHORIZATION;
-use warp::Filter;
-use tokio::sync::Mutex;
 use tokio::sync::oneshot::Receiver;
+use tokio::sync::Mutex;
+use warp::Filter;
 
 use crate::config::Config;
-use crate::monitor::telegram::{TelegramServiceTrait};
 use crate::monitor::utils::ToMarkdown;
+use crate::validator::Validator;
 
 pub struct ApiService {
     pub configs: Config,
-    pub telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
+    pub validator: Arc<Mutex<Validator>>,
 }
 
 impl ApiService {
-    pub fn new(configs: Config, telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>) -> ApiService {
-        ApiService { configs, telegram }
+    pub fn new(configs: Config, validator: Arc<Mutex<Validator>>) -> ApiService {
+        ApiService { configs, validator }
     }
 
     pub async fn start_api(&self, kill_receiver: Option<Receiver<()>>) {
-        let addr_str = format!("{}:{}", self.configs.clone().host.unwrap(), self.configs.clone().port.unwrap());
+        let addr_str = format!(
+            "{}:{}",
+            self.configs.clone().host.unwrap(),
+            self.configs.clone().port.unwrap()
+        );
         let addr: SocketAddr = addr_str.parse().unwrap();
         println!("Server started in host: {}", addr.to_string());
 
@@ -32,8 +36,8 @@ impl ApiService {
                 warp::serve(self.routes()).run(addr).await;
             }
             Some(rx) => {
-                let (_addr, server) = warp::serve(self.routes())
-                    .bind_with_graceful_shutdown(addr, async {
+                let (_addr, server) =
+                    warp::serve(self.routes()).bind_with_graceful_shutdown(addr, async {
                         rx.await.ok();
                     });
                 server.await;
@@ -41,13 +45,17 @@ impl ApiService {
         };
     }
 
-    pub fn routes(&self) -> impl Filter<Extract=impl warp::Reply, Error=warp::Rejection> + Clone {
+    pub fn routes(
+        &self,
+    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         self.post_notification()
     }
 
-    pub fn post_notification(&self) -> impl Filter<Extract=impl warp::Reply, Error=warp::Rejection> + Clone {
+    pub fn post_notification(
+        &self,
+    ) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
         let auth_token = self.configs.clone().api_token.unwrap();
-        let telegram_ref = self.telegram.clone();
+        let validator_ref = self.validator.clone();
 
         warp::path!("notification")
             .and(warp::post())
@@ -56,24 +64,40 @@ impl ApiService {
             // inject auth token
             .and(warp::any().map(move || auth_token.clone()))
             // inject telegram service reference
-            .and(warp::any().map(move || telegram_ref.clone()))
-            .then(|body: HashMap<String, String>, token: String, auth_token: String, telegram_ref: Arc<Mutex<dyn TelegramServiceTrait + Send>>| async move {
-                // validate access token
-                if !ApiService::validate_auth(&auth_token, &token) {
-                    return warp::reply::with_status("FORBIDDEN", warp::http::StatusCode::FORBIDDEN);
-                }
+            .and(warp::any().map(move || validator_ref.clone()))
+            .then(
+                |body: HashMap<String, String>,
+                 token: String,
+                 auth_token: String,
+                 validator: Arc<Mutex<Validator>>| async move {
+                    // validate access token
+                    if !ApiService::validate_auth(&auth_token, &token) {
+                        return warp::reply::with_status(
+                            "FORBIDDEN",
+                            warp::http::StatusCode::FORBIDDEN,
+                        );
+                    }
 
-                // validate message to then notify to telegram
-                println!("Notification request: {:?}", body);
+                    // validate message to then notify to telegram
+                    println!("Notification request: {:?}", body);
 
-                // send message to telegram
-                telegram_ref.lock().await.send_message(
-                    body.get("message").unwrap().to_string().parse_text_to_markdown(), &None,
-                ).await;
+                    // send message to telegram
+                    validator
+                        .lock()
+                        .await
+                        .send_telegram_message(
+                            body.get("message")
+                                .unwrap()
+                                .to_string()
+                                .parse_text_to_markdown(),
+                            &None,
+                        )
+                        .await;
 
-                // 200 response
-                warp::reply::with_status("ACCEPTED", warp::http::StatusCode::ACCEPTED)
-            })
+                    // 200 response
+                    warp::reply::with_status("ACCEPTED", warp::http::StatusCode::ACCEPTED)
+                },
+            )
     }
 
     fn validate_auth(api_token: &str, base64_token: &str) -> bool {
@@ -89,21 +113,17 @@ impl ApiService {
         }
 
         match BASE64_STANDARD.decode(&base64_token[e.unwrap()..].trim()) {
-            Ok(token) => {
-                api_token.eq(&String::from_utf8(token).unwrap())
-            }
-            Err(_) => {
-                false
-            }
+            Ok(token) => api_token.eq(&String::from_utf8(token).unwrap()),
+            Err(_) => false,
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use base64::Engine;
-    use base64::prelude::BASE64_STANDARD;
     use crate::monitor::api::ApiService;
+    use base64::prelude::BASE64_STANDARD;
+    use base64::Engine;
 
     #[test]
     fn validate_base64_test() {
@@ -115,7 +135,10 @@ mod tests {
         // valid tokens
         assert_eq!(true, ApiService::validate_auth("test", "Basic dGVzdA=="));
         assert_eq!(true, ApiService::validate_auth("test", " Basic dGVzdA=="));
-        assert_eq!(true, ApiService::validate_auth("test", " Basic  dGVzdA==  "));
+        assert_eq!(
+            true,
+            ApiService::validate_auth("test", " Basic  dGVzdA==  ")
+        );
 
         // invalid tokens
         assert_eq!(false, ApiService::validate_auth("test", "dGVzdA==  "));

@@ -4,21 +4,23 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 
-use crate::monitor::telegram::TelegramServiceTrait;
-use crate::validator::Validator;
-use crate::monitor::website::WebsiteService;
 use crate::monitor::utils::ToMarkdown;
+use crate::validator::Validator;
 
 pub struct TelegramMonitor {
-    telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
     pause_service: Arc<Mutex<bool>>,
     validator: Arc<Mutex<Validator>>,
 }
 
 impl TelegramMonitor {
-    pub fn new(telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>, web: Arc<Mutex<WebsiteService>>, pause_service: Arc<Mutex<bool>>) -> TelegramMonitor {
-        let validator = Arc::new(Mutex::new(Validator::new(telegram.clone(), web.clone())));
-        TelegramMonitor { telegram, pause_service, validator }
+    pub fn new(
+        validator: Arc<Mutex<Validator>>,
+        pause_service: Arc<Mutex<bool>>,
+    ) -> TelegramMonitor {
+        TelegramMonitor {
+            pause_service,
+            validator,
+        }
     }
 
     pub async fn start_monitoring(&self) {
@@ -27,15 +29,15 @@ impl TelegramMonitor {
     }
 
     async fn run_commands_sync(&self) {
-        self.telegram.lock().await.sync_commands().await;
-        let commands = self.telegram.lock().await.get_commands().await;
+        self.validator.lock().await.sync_commands().await;
+        let commands = self.validator.lock().await.get_commands().await;
         println!("commands: {:?}", commands);
     }
 
     async fn run_telegram_monitor(&self) {
         loop {
-            self.telegram.lock().await.send_pendings_messages().await;
-            let updates = self.telegram.lock().await.get_all_updates().await;
+            self.validator.lock().await.send_pending_messages().await;
+            let updates = self.validator.lock().await.get_all_updates().await;
             if !updates.is_empty() {
                 println!("--------------------");
                 println!("{:?}", updates);
@@ -58,32 +60,63 @@ impl TelegramMonitor {
 
                                 match command_name.as_str() {
                                     "/check_all" => {
-                                        self.validator.lock().await.execute_check_api(group_id).await;
-                                        self.validator.lock().await.execute_check_frontend(group_id).await;
-                                        self.validator.lock().await.execute_check_certs(group_id).await;
+                                        self.validator
+                                            .lock()
+                                            .await
+                                            .execute_check_api(group_id)
+                                            .await;
+                                        self.validator
+                                            .lock()
+                                            .await
+                                            .execute_check_frontend(group_id)
+                                            .await;
+                                        self.validator
+                                            .lock()
+                                            .await
+                                            .execute_check_certs(group_id)
+                                            .await;
                                     }
                                     "/check_api" => {
-                                        self.validator.lock().await.execute_check_api(group_id).await;
+                                        self.validator
+                                            .lock()
+                                            .await
+                                            .execute_check_api(group_id)
+                                            .await;
                                     }
                                     "/check_frontend" => {
-                                        self.validator.lock().await.execute_check_frontend(group_id).await;
+                                        self.validator
+                                            .lock()
+                                            .await
+                                            .execute_check_frontend(group_id)
+                                            .await;
                                     }
                                     "/check_certs" => {
-                                        self.validator.lock().await.execute_check_certs(group_id).await;
+                                        self.validator
+                                            .lock()
+                                            .await
+                                            .execute_check_certs(group_id)
+                                            .await;
                                     }
                                     "/pause" => {
                                         let mut pause_v = self.pause_service.lock().await;
                                         *pause_v = true;
-                                        self.telegram.lock().await
-                                            .send_message("✅ Service is paused, if you want to reanudate it use the command /unpause.".to_string().parse_text_to_markdown(), &None).await;
+                                        self.validator.lock().await.send_telegram_message(
+                                            "✅ Service is paused, if you want to reanudate it use the command /unpause.".to_string().parse_text_to_markdown(), &None
+                                        ).await;
                                     }
                                     "/unpause" => {
                                         let mut pause_v = self.pause_service.lock().await;
                                         *pause_v = false;
-                                        self.telegram.lock().await.send_message(
-                                            "✅ Service is reanudated.".to_string().parse_text_to_markdown(),
-                                            &None,
-                                        ).await;
+                                        self.validator
+                                            .lock()
+                                            .await
+                                            .send_telegram_message(
+                                                "✅ Service is reanudated."
+                                                    .to_string()
+                                                    .parse_text_to_markdown(),
+                                                &None,
+                                            )
+                                            .await;
                                     }
                                     _ => {
                                         println!("⚠️ Unknow command: {}", command_name);
