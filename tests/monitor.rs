@@ -1,5 +1,4 @@
 use std::sync::Arc;
-
 use httpmock::Method::GET;
 use httpmock::MockServer;
 use tokio::runtime::Runtime;

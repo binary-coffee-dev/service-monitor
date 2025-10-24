@@ -1,6 +1,5 @@
 use std::env::current_dir;
 use std::{fs::File, io::BufReader};
-
 use serde::Deserialize;
 
 use crate::monitor::website_vitality_service::{Get, RouteTest};

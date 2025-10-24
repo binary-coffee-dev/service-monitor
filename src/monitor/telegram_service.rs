@@ -3,7 +3,6 @@ use mockall::automock;
 
 use crate::config::Config;
 use crate::monitor::telegram_service::models::{GetMyCommandsRes, GetUpdatesRes, SendMessageBody, Update};
-
 use self::models::{BotCommand, SetMyCommandsBody};
 
 pub mod models;

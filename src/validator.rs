@@ -1,10 +1,10 @@
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use crate::monitor::telegram_service::models::BotCommand;
 use crate::monitor::telegram_service::TelegramServiceTrait;
 use crate::utils::ToMarkdown;
 use crate::monitor::website_vitality_service::WebsiteVitalityService;
-use tokio::sync::Mutex;
 
 pub struct Validator {
     telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>,

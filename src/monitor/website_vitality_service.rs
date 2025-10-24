@@ -1,6 +1,5 @@
 use std::time::Duration;
 use serde::{Deserialize, Serialize};
-
 use checkssl::CheckSSL;
 use reqwest::Client;
 
