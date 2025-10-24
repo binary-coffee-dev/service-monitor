@@ -104,7 +104,7 @@ impl WebsiteVitalityService {
             body,
             content_type,
         } = post;
-        let times_to_retry = self.configs.times_to_retry.unwrap();
+        let times_to_retry_after_error = self.configs.times_to_retry_after_error.unwrap();
         let mut times = 0;
         loop {
             times += 1;
@@ -132,7 +132,7 @@ impl WebsiteVitalityService {
                     }
                 },
                 Err(err) => {
-                    if times >= times_to_retry {
+                    if times >= times_to_retry_after_error {
                         print!("Error: {:?}", err);
                         ret.push(format!("❌ The url POST [{}] fails.", url, ).parse_text_to_markdown());
                         break;
@@ -144,7 +144,7 @@ impl WebsiteVitalityService {
 
     async fn get_request(&self, get: &Get, client: &Client, ret: &mut Vec<String>) {
         let Get { url } = get;
-        let times_to_retry = self.configs.times_to_retry.unwrap();
+        let times_to_retry_after_error = self.configs.times_to_retry_after_error.unwrap();
         let mut times = 0;
         loop {
             times += 1;
@@ -165,7 +165,7 @@ impl WebsiteVitalityService {
                     }
                 },
                 Err(err) => {
-                    if times >= times_to_retry {
+                    if times >= times_to_retry_after_error {
                         print!("Error: {:?}", err);
                         ret.push(format!("❌ The url GET [{}] fails.", url).parse_text_to_markdown());
                         break;

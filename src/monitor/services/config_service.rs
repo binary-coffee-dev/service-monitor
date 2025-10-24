@@ -7,24 +7,27 @@ use crate::monitor::services::website_vitality_service::{Get, RouteTest};
 #[derive(Deserialize, Debug, Clone)]
 pub struct ConfigService {
     // service monitor
-    pub enable_service_monitor: Option<bool>,
-    pub api_tests: Option<Vec<RouteTest>>,
-    pub frontend_tests: Option<Vec<RouteTest>>,
-    pub ssl_tests: Option<Vec<Get>>,
-    pub website_monitor_timeout: Option<u64>,
-    pub pause_reminder_timeout: Option<u64>,
-    pub times_to_retry: Option<i64>,
+    pub enable_monitoring_service: Option<bool>,
 
     // telegram_service
-    pub enable_telegram: Option<bool>,
+    pub enable_telegram_bot_commands: Option<bool>,
+    pub retrieve_commands_interval: Option<u64>,
     pub telegram_bot_token: Option<String>,
     pub groups: Option<Vec<i64>>,
 
     // api
     pub enable_api: Option<bool>,
-    pub host: Option<String>,
-    pub port: Option<u32>,
+    pub api_host: Option<String>,
+    pub api_port: Option<u32>,
     pub api_token: Option<String>,
+
+    // general settings can be added here
+    pub times_to_retry_after_error: Option<i64>,
+    pub pause_reminder_interval: Option<u64>,
+    pub api_tests: Option<Vec<RouteTest>>,
+    pub frontend_tests: Option<Vec<RouteTest>>,
+    pub ssl_tests: Option<Vec<Get>>,
+    pub website_monitoring_interval: Option<u64>,
 }
 
 impl ConfigService {
@@ -64,8 +67,8 @@ impl ConfigService {
     fn merge_configs_with_defalt(mut config: ConfigService) -> ConfigService {
         let default = ConfigService::default();
         // service monitor
-        if config.enable_service_monitor.is_none() {
-            config.enable_service_monitor = default.enable_service_monitor;
+        if config.enable_monitoring_service.is_none() {
+            config.enable_monitoring_service = default.enable_monitoring_service;
         }
         if config.api_tests.is_none() {
             config.api_tests = default.api_tests;
@@ -73,31 +76,34 @@ impl ConfigService {
         if config.frontend_tests.is_none() {
             config.frontend_tests = default.frontend_tests;
         }
-        if config.website_monitor_timeout.is_none() {
-            config.website_monitor_timeout = default.website_monitor_timeout;
+        if config.website_monitoring_interval.is_none() {
+            config.website_monitoring_interval = default.website_monitoring_interval;
         }
         if config.ssl_tests.is_none() {
             config.ssl_tests = default.ssl_tests;
         }
-        if config.pause_reminder_timeout.is_none() {
-            config.pause_reminder_timeout = default.pause_reminder_timeout;
+        if config.pause_reminder_interval.is_none() {
+            config.pause_reminder_interval = default.pause_reminder_interval;
         }
-        if config.times_to_retry.is_none() {
-            config.times_to_retry = default.times_to_retry;
+        if config.times_to_retry_after_error.is_none() {
+            config.times_to_retry_after_error = default.times_to_retry_after_error;
         }
         // telegram_service
-        if config.enable_telegram.is_none() {
-            config.enable_telegram = default.enable_telegram;
+        if config.enable_telegram_bot_commands.is_none() {
+            config.enable_telegram_bot_commands = default.enable_telegram_bot_commands;
+        }
+        if config.retrieve_commands_interval.is_none() {
+            config.retrieve_commands_interval = default.retrieve_commands_interval;
         }
         if config.groups.is_none() {
             config.groups = default.groups;
         }
         // api
-        if config.host.is_none() {
-            config.host = default.host;
+        if config.api_host.is_none() {
+            config.api_host = default.api_host;
         }
-        if config.port.is_none() {
-            config.port = default.port;
+        if config.api_port.is_none() {
+            config.api_port = default.api_port;
         }
         if config.api_token.is_none() {
             config.api_token = default.api_token;
@@ -111,22 +117,24 @@ impl ConfigService {
     fn default() -> ConfigService {
         ConfigService {
             // service monitor
-            enable_service_monitor: Some(true),
-            api_tests: Some(Vec::new()),
-            frontend_tests: Some(Vec::new()),
-            website_monitor_timeout: Some(20),
-            ssl_tests: Some(Vec::new()),
-            pause_reminder_timeout: Some(86400),
-            times_to_retry: Some(5),
-            // telegram_service
-            enable_telegram: Some(true),
+            enable_monitoring_service: Some(true),
+            // telegram
+            enable_telegram_bot_commands: Some(true),
+            retrieve_commands_interval: Some(2),
             telegram_bot_token: None,
             groups: Some(Vec::new()),
             // api
-            host: Some("0.0.0.0".to_string()),
-            port: Some(5353),
+            api_host: Some("0.0.0.0".to_string()),
+            api_port: Some(5353),
             api_token: Some("service_token".to_string()),
             enable_api: Some(true),
+            // general
+            api_tests: Some(Vec::new()),
+            frontend_tests: Some(Vec::new()),
+            website_monitoring_interval: Some(20),
+            ssl_tests: Some(Vec::new()),
+            pause_reminder_interval: Some(86400),
+            times_to_retry_after_error: Some(5),
         }
     }
 }
@@ -137,7 +145,7 @@ mod tests {
 
     #[test]
     fn deserialize_api_endpoints_test() {
-        let json_example = "{\"enable_api\": true, \"host\": \"127.0.0.1\", \"port\": 6565, \"api_token\": \"example_token\", \"telegram_bot_token\": \"123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11\", \"groups\": [149770819], \"website_monitor_timeout\": 20, \"api_tests\": [{\"type\": \"POST\", \"url\": \"https://api.binarycoffee.dev/graphql\", \"body\": \"{}\", \"content_type\": \"application/json\"}, {\"type\": \"GET\", \"url\": \"https://api.binarycoffee.dev/api/sitemap\"}], \"frontend_tests\": [{\"type\": \"GET\", \"url\": \"https://binarycoffee.dev\"}, {\"type\": \"GET\", \"url\": \"https://binarycoffee.dev/post/bienvenidos-al-blog-binary-coffeermdcl\"}, {\"type\": \"GET\", \"url\": \"https://binarycoffee.dev/users/guille\"}], \"ssl_tests\": [{\"url\": \"binarycoffee.dev\"}, {\"url\": \"api.binarycoffee.dev\"}]}".to_string();
+        let json_example = "{\"enable_api\": true, \"host\": \"127.0.0.1\", \"port\": 6565, \"api_token\": \"example_token\", \"telegram_bot_token\": \"123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11\", \"groups\": [149770819], \"website_monitoring_interval\": 20, \"api_tests\": [{\"type\": \"POST\", \"url\": \"https://api.binarycoffee.dev/graphql\", \"body\": \"{}\", \"content_type\": \"application/json\"}, {\"type\": \"GET\", \"url\": \"https://api.binarycoffee.dev/api/sitemap\"}], \"frontend_tests\": [{\"type\": \"GET\", \"url\": \"https://binarycoffee.dev\"}, {\"type\": \"GET\", \"url\": \"https://binarycoffee.dev/post/bienvenidos-al-blog-binary-coffeermdcl\"}, {\"type\": \"GET\", \"url\": \"https://binarycoffee.dev/users/guille\"}], \"ssl_tests\": [{\"url\": \"binarycoffee.dev\"}, {\"url\": \"api.binarycoffee.dev\"}]}".to_string();
         let configs = ConfigService::merge_configs_with_defalt(
             serde_json::from_str(&json_example)
                 .expect("Error deserializing configuration json file."),
@@ -151,20 +159,21 @@ mod tests {
     fn merge_configs_test() {
         let mut config = ConfigService {
             // service monitor
-            enable_service_monitor: None,
+            enable_monitoring_service: None,
             api_tests: None,
             frontend_tests: None,
             ssl_tests: None,
-            website_monitor_timeout: None,
-            pause_reminder_timeout: None,
-            times_to_retry: None,
+            website_monitoring_interval: None,
+            pause_reminder_interval: None,
+            times_to_retry_after_error: None,
             // telegram_service
-            enable_telegram: None,
+            enable_telegram_bot_commands: None,
+            retrieve_commands_interval: None,
             telegram_bot_token: Some("asdfasdf.asdfasdf".to_string()),
             groups: None,
             // api
-            host: None,
-            port: None,
+            api_host: None,
+            api_port: None,
             api_token: None,
             enable_api: None,
         };
@@ -172,20 +181,21 @@ mod tests {
         config = ConfigService::merge_configs_with_defalt(config);
 
         // service monitor
-        assert!(config.enable_service_monitor.is_some());
+        assert!(config.enable_monitoring_service.is_some());
         assert!(config.api_tests.is_some());
         assert!(config.frontend_tests.is_some());
         assert!(config.ssl_tests.is_some());
-        assert!(config.website_monitor_timeout.is_some());
-        assert!(config.pause_reminder_timeout.is_some());
-        assert!(config.times_to_retry.is_some());
+        assert!(config.website_monitoring_interval.is_some());
+        assert!(config.pause_reminder_interval.is_some());
+        assert!(config.times_to_retry_after_error.is_some());
         // telegram_service
-        assert!(config.enable_telegram.is_some());
+        assert!(config.enable_telegram_bot_commands.is_some());
+        assert!(config.retrieve_commands_interval.is_some());
         assert!(config.telegram_bot_token.is_some());
         assert!(config.groups.is_some());
         // api
-        assert!(config.host.is_some());
-        assert!(config.port.is_some());
+        assert!(config.api_host.is_some());
+        assert!(config.api_port.is_some());
         assert!(config.api_token.is_some());
         assert!(config.enable_api.is_some());
     }

@@ -21,22 +21,28 @@ The application configurations is a file with the following structure:
   // enable or disable the notification api
   "enable_api": true,
   // host where the api will be exposed
-  "host": "127.0.0.1",
+  "api_host": "0.0.0.0",
   // port where the api will be exposed
-  "port": 6565,
+  "api_port": 6565,
   // token to access the api (to use the basic auth you need to encode it in base64)
   "api_token": "example_token",
 
   // telegram bot integration
   // enable or disable telegram integration (if disabled, not commands will be monitored form telegram)
-  "enable_telegram": true,
+  "enable_telegram_bot_commands": true,
+  // time interval to retrieve the commands from telegram
+  "retrieve_commands_interval": 2,
   // telegram bot token
-  "telegram_bot_token": "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
+  "telegram_bot_token": "",
   // group chat ids to send the notifications
   "groups": [149770819],
 
+  // enable or disable the monitoring service
+  "enable_monitoring_service": true,
   // time interval to automatically check the monitored system
-  "website_monitor_timeout": 20,
+  "website_monitoring_interval": 20,
+  // time interval to remind about paused monitoring service
+  "pause_reminder_interval": 86400,
   
   // list of api endpoints to check
   "api_tests": [
@@ -44,7 +50,7 @@ The application configurations is a file with the following structure:
       // type of request (GET, POST)
       "type": "POST",
       // endpoint url
-      "url": "https://api.binarycoffee.dev/graphql",
+      "url": "https://google.com",
       // body of the request
       "body": "{}",
       // content type of the request
@@ -52,7 +58,7 @@ The application configurations is a file with the following structure:
     },
     {
       "type": "GET",
-      "url": "https://api.binarycoffee.dev/api/sitemap"
+      "url": "https://google.com"
     }
   ],
   
@@ -62,32 +68,24 @@ The application configurations is a file with the following structure:
       // type of request (GET)
       "type": "GET",
       // frontend url
-      "url": "https://binarycoffee.dev"
-    },
-    {
-      "type": "GET",
-      "url": "https://binarycoffee.dev/post/bienvenidos-al-blog-binary-coffeermdcl"
-    },
-    {
-      "type": "GET",
-      "url": "https://binarycoffee.dev/users/guille"
+      "url": "https://google.com"
     }
   ],
   
   // lise of domains to validate SSL certificate
   "ssl_tests": [
     {
-      // domain to check
-      "url": "binarycoffee.dev"
-    },
-    {
-      "url": "api.binarycoffee.dev"
+      // domain to check certificate
+      "url": "google.com"
     }
   ]
 }
 ```
 
-> Note: the *config.json* file should be in the same folder that the application.
+> Note: the *config.json* file should be in the same folder that the application. For reference check the
+> config.initial.json file.
+
+> Note: all time intervals are in seconds.
 
 ## Run project
 

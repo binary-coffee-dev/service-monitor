@@ -47,8 +47,8 @@ impl Monitor {
         let config_ref = self.configs.clone();
         let validator_ref = Monitor::new_validator(self);
         let telegram_monitor_thread = rt.spawn(async move {
-            if config_ref.enable_telegram.unwrap() {
-                let telegram_monitor = TelegramMonitor::new(validator_ref, pause_ref);
+            if config_ref.enable_telegram_bot_commands.unwrap() {
+                let telegram_monitor = TelegramMonitor::new(validator_ref, pause_ref, config_ref);
                 telegram_monitor.start_monitoring().await;
                 println!("Telegram monitor finished");
             }
@@ -59,7 +59,7 @@ impl Monitor {
         let pause_ref = pause.clone();
         let validator_ref = Monitor::new_validator(self);
         let website_monitor = rt.spawn(async move {
-            if config_ref.enable_service_monitor.unwrap() {
+            if config_ref.enable_monitoring_service.unwrap() {
                 let web_monitor = WebMonitor::new(config_ref, validator_ref, pause_ref);
                 web_monitor.run_website_monitor().await;
             }

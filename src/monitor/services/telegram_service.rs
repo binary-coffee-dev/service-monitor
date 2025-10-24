@@ -74,7 +74,7 @@ impl TelegramService {
 
     async fn retry_request(&mut self, req: &TelegramRequest) -> Result<reqwest::Response, String> {
         let mut times = 0;
-        let times_to_retry_telegram = self.configs.times_to_retry.unwrap();
+        let times_to_retry_after_error_telegram = self.configs.times_to_retry_after_error.unwrap();
         loop {
             times += 1;
             match req {
@@ -91,7 +91,7 @@ impl TelegramService {
                             return Ok(res_v);
                         }
                         Err(err) => {
-                            if times >= times_to_retry_telegram {
+                            if times >= times_to_retry_after_error_telegram {
                                 self.pending_messages.push(TelegramRequest::Post {
                                     url: url.clone(),
                                     body: body.clone(),
@@ -113,7 +113,7 @@ impl TelegramService {
                             return Ok(res_v);
                         }
                         Err(err) => {
-                            if times >= times_to_retry_telegram {
+                            if times >= times_to_retry_after_error_telegram {
                                 return Err(format!(
                                     "Failing connecting to telegram_service api. {:?}",
                                     err

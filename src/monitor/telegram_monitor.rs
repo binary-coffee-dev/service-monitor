@@ -2,23 +2,26 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
-
+use crate::monitor::services::config_service::ConfigService;
 use crate::monitor::utils::ToMarkdown;
 use crate::monitor::validator::Validator;
 
 pub struct TelegramMonitor {
     pause_service: Arc<Mutex<bool>>,
     validator: Arc<Mutex<Validator>>,
+    config: ConfigService
 }
 
 impl TelegramMonitor {
     pub fn new(
         validator: Arc<Mutex<Validator>>,
         pause_service: Arc<Mutex<bool>>,
+        config: ConfigService,
     ) -> TelegramMonitor {
         TelegramMonitor {
             pause_service,
             validator,
+            config,
         }
     }
 
@@ -126,7 +129,7 @@ impl TelegramMonitor {
                     }
                 }
             }
-            sleep(Duration::from_secs(2)).await;
+            sleep(Duration::from_secs(self.config.retrieve_commands_interval.unwrap())).await;
         }
     }
 

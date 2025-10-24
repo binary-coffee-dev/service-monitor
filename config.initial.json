@@ -1,0 +1,40 @@
+{
+  "enable_api": true,
+  "api_host": "0.0.0.0",
+  "api_port": 6566,
+  "api_token": "service_token",
+  "enable_telegram_bot_commands": true,
+  "retrieve_commands_interval": 2,
+  "telegram_bot_token": "",
+  "groups": [
+    -1234443444
+  ],
+  "enable_monitoring_service": true,
+  "website_monitoring_interval": 20,
+  "pause_reminder_interval": 86400,
+  "times_to_retry_after_error": 5,
+  "api_tests": [
+    {
+      "type": "GET",
+      "url": "https://fixcu.com/posts"
+    }
+  ],
+  "frontend_tests": [
+    {
+      "type": "GET",
+      "url": "https://fixcu.com"
+    },
+    {
+      "type": "GET",
+      "url": "https://dev.fixcu.com"
+    }
+  ],
+  "ssl_tests": [
+    {
+      "url": "fixcu.com"
+    },
+    {
+      "url": "dev.fixcu.com"
+    }
+  ]
+}

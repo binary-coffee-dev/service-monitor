@@ -12,21 +12,22 @@ use sm::monitor::services::website_vitality_service::{Get, RouteTest};
 fn get_default_test_config(port: Option<u32>) -> ConfigService {
     ConfigService {
         // service monitor
-        enable_service_monitor: Some(true),
+        enable_monitoring_service: Some(true),
         api_tests: Some(Vec::new()),
         frontend_tests: Some(Vec::new()),
-        website_monitor_timeout: Some(0),
+        website_monitoring_interval: Some(0),
         ssl_tests: Some(Vec::new()),
-        pause_reminder_timeout: Some(86400),
-        times_to_retry: Some(5),
+        pause_reminder_interval: Some(86400),
+        times_to_retry_after_error: Some(5),
         // telegram_service
-        enable_telegram: Some(false),
+        enable_telegram_bot_commands: Some(false),
+        retrieve_commands_interval: Some(2),
         telegram_bot_token: None,
         groups: Some(Vec::new()),
         // api
         enable_api: Some(false),
-        host: Some("127.0.0.1".to_string()),
-        port,
+        api_host: Some("127.0.0.1".to_string()),
+        api_port: port,
         api_token: Some("test".to_string()),
     }
 }

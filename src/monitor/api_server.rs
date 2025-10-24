@@ -25,8 +25,8 @@ impl ApiServer {
     pub async fn start_api(&self, kill_receiver: Option<Receiver<()>>) {
         let addr_str = format!(
             "{}:{}",
-            self.configs.clone().host.unwrap(),
-            self.configs.clone().port.unwrap()
+            self.configs.clone().api_host.unwrap(),
+            self.configs.clone().api_port.unwrap()
         );
         let addr: SocketAddr = addr_str.parse().unwrap();
         println!("Server started in host: {}", addr.to_string());

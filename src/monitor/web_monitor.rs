@@ -21,7 +21,7 @@ impl WebMonitor {
     pub async fn run_website_monitor(&self) {
         let mut pause_time_ac = 0;
         loop {
-            if pause_time_ac >= self.configs.pause_reminder_timeout.unwrap() {
+            if pause_time_ac >= self.configs.pause_reminder_interval.unwrap() {
                 pause_time_ac = 0;
                 self.validator.lock().await.send_telegram_message(
                     "⚠️ REMINDER\nService monitor is in pause.".to_string().parse_text_to_markdown(),
@@ -41,10 +41,10 @@ impl WebMonitor {
                     self.validator.lock().await.handler_validation(errors, None, None).await;
                 }
             } else {
-                pause_time_ac += self.configs.website_monitor_timeout.unwrap();
+                pause_time_ac += self.configs.website_monitoring_interval.unwrap();
             }
 
-            sleep(Duration::from_secs(self.configs.website_monitor_timeout.unwrap())).await;
+            sleep(Duration::from_secs(self.configs.website_monitoring_interval.unwrap())).await;
         }
     }
 }
