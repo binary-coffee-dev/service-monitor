@@ -7,8 +7,8 @@ use tokio::sync::Mutex;
 
 use sm::config::Config;
 use sm::monitor::Monitor;
-use sm::monitor::telegram::MockTelegramServiceTrait;
-use sm::monitor::website::{Get, RouteTest};
+use sm::monitor::telegram_service::MockTelegramServiceTrait;
+use sm::monitor::website_vitality_service::{Get, RouteTest};
 
 fn get_default_test_config(port: Option<u32>) -> Config {
     Config {
@@ -20,7 +20,7 @@ fn get_default_test_config(port: Option<u32>) -> Config {
         ssl_tests: Some(Vec::new()),
         pause_reminder_timeout: Some(86400),
         times_to_retry: Some(5),
-        // telegram
+        // telegram_service
         enable_telegram: Some(false),
         telegram_bot_token: None,
         groups: Some(Vec::new()),

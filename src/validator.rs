@@ -1,26 +1,26 @@
 use std::sync::Arc;
 
-use crate::monitor::telegram::models::BotCommand;
-use crate::monitor::telegram::TelegramServiceTrait;
-use crate::monitor::utils::ToMarkdown;
-use crate::monitor::website::WebsiteService;
+use crate::monitor::telegram_service::models::BotCommand;
+use crate::monitor::telegram_service::TelegramServiceTrait;
+use crate::utils::ToMarkdown;
+use crate::monitor::website_vitality_service::WebsiteVitalityService;
 use tokio::sync::Mutex;
 
 pub struct Validator {
     telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
-    web: Arc<Mutex<WebsiteService>>,
+    web: Arc<Mutex<WebsiteVitalityService>>,
 }
 
 impl Validator {
     pub fn new(
         telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
-        web: Arc<Mutex<WebsiteService>>,
+        web: Arc<Mutex<WebsiteVitalityService>>,
     ) -> Validator {
         Validator { telegram, web }
     }
 
     pub async fn execute_check_certs(&self, group_id: i64) {
-        let errs = self.web.lock().await.certificates_vitaly().await;
+        let errs = self.web.lock().await.certificates_vitality().await;
         self.handler_validation(
             errs,
             Some(
@@ -34,7 +34,7 @@ impl Validator {
     }
 
     pub async fn execute_check_frontend(&self, group_id: i64) {
-        let errs = self.web.lock().await.frontend_vitaly().await;
+        let errs = self.web.lock().await.frontend_vitality().await;
         self.handler_validation(
             errs,
             Some(
@@ -48,7 +48,7 @@ impl Validator {
     }
 
     pub async fn execute_check_api(&self, group_id: i64) {
-        let errs = self.web.lock().await.api_vitally().await;
+        let errs = self.web.lock().await.api_vitality().await;
         self.handler_validation(
             errs,
             Some(
@@ -104,7 +104,7 @@ impl Validator {
         self.telegram.lock().await.sync_commands().await;
     }
 
-    pub async fn get_all_updates(&self) -> Vec<crate::monitor::telegram::models::Update> {
+    pub async fn get_all_updates(&self) -> Vec<crate::monitor::telegram_service::models::Update> {
         self.telegram.lock().await.get_all_updates().await
     }
 

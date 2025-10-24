@@ -4,7 +4,7 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 
-use crate::monitor::utils::ToMarkdown;
+use crate::utils::ToMarkdown;
 use crate::validator::Validator;
 
 pub struct TelegramMonitor {

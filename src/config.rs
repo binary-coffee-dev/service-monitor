@@ -3,7 +3,7 @@ use std::{fs::File, io::BufReader};
 
 use serde::Deserialize;
 
-use crate::monitor::website::{Get, RouteTest};
+use crate::monitor::website_vitality_service::{Get, RouteTest};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Config {
@@ -16,7 +16,7 @@ pub struct Config {
     pub pause_reminder_timeout: Option<u64>,
     pub times_to_retry: Option<i64>,
 
-    // telegram
+    // telegram_service
     pub enable_telegram: Option<bool>,
     pub telegram_bot_token: Option<String>,
     pub groups: Option<Vec<i64>>,
@@ -86,7 +86,7 @@ impl Config {
         if config.times_to_retry.is_none() {
             config.times_to_retry = default.times_to_retry;
         }
-        // telegram
+        // telegram_service
         if config.enable_telegram.is_none() {
             config.enable_telegram = default.enable_telegram;
         }
@@ -119,7 +119,7 @@ impl Config {
             ssl_tests: Some(Vec::new()),
             pause_reminder_timeout: Some(86400),
             times_to_retry: Some(5),
-            // telegram
+            // telegram_service
             enable_telegram: Some(true),
             telegram_bot_token: None,
             groups: Some(Vec::new()),
@@ -159,7 +159,7 @@ mod tests {
             website_monitor_timeout: None,
             pause_reminder_timeout: None,
             times_to_retry: None,
-            // telegram
+            // telegram_service
             enable_telegram: None,
             telegram_bot_token: Some("asdfasdf.asdfasdf".to_string()),
             groups: None,
@@ -180,7 +180,7 @@ mod tests {
         assert!(config.website_monitor_timeout.is_some());
         assert!(config.pause_reminder_timeout.is_some());
         assert!(config.times_to_retry.is_some());
-        // telegram
+        // telegram_service
         assert!(config.enable_telegram.is_some());
         assert!(config.telegram_bot_token.is_some());
         assert!(config.groups.is_some());

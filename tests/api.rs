@@ -9,8 +9,8 @@ use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
 use sm::config::Config;
-use sm::monitor::api::ApiService;
-use sm::monitor::telegram::{MockTelegramServiceTrait, TelegramServiceTrait};
+use sm::api_server::ApiServer;
+use sm::monitor::telegram_service::{MockTelegramServiceTrait, TelegramServiceTrait};
 
 fn get_default_test_config(port: Option<u32>) -> Config {
     Config {
@@ -22,7 +22,7 @@ fn get_default_test_config(port: Option<u32>) -> Config {
         ssl_tests: Some(Vec::new()),
         pause_reminder_timeout: Some(86400),
         times_to_retry: Some(5),
-        // telegram
+        // telegram_service
         enable_telegram: Some(false),
         telegram_bot_token: None,
         groups: Some(Vec::new()),
@@ -44,11 +44,11 @@ fn start_api_service(
     let api_thread = rt.spawn(async move {
         let validator = Arc::new(Mutex::new(sm::validator::Validator::new(
             telegram_service.clone(),
-            Arc::new(Mutex::new(sm::monitor::website::WebsiteService::new(
+            Arc::new(Mutex::new(sm::monitor::website_vitality_service::WebsiteVitalityService::new(
                 config.clone(),
             ))),
         )));
-        let api_service = ApiService::new(config, validator);
+        let api_service = ApiServer::new(config, validator);
         api_service.start_api(Some(rx)).await;
         println!("API service finished");
     });
@@ -66,7 +66,7 @@ fn get_url(config: Config) -> String {
 async fn test_send_notification_flow() {
     // start api service
     let config_ref = get_default_test_config(Some(8353));
-    let expected_message = "test message sent to telegram".to_string();
+    let expected_message = "test message sent to telegram_service".to_string();
 
     let telegram_service_share = Arc::new(Mutex::new(MockTelegramServiceTrait::new()));
 
@@ -74,7 +74,7 @@ async fn test_send_notification_flow() {
     let telegram_service_ref = telegram_service_share.clone();
     let (api_thread, rt, tx) = start_api_service(config_ref.clone(), telegram_service_ref.clone());
 
-    // assert that telegram service send_message method was called
+    // assert that telegram_service service send_message method was called
     telegram_service_share
         .lock()
         .await
@@ -116,7 +116,7 @@ async fn test_send_notification_flow() {
 async fn test_authorization_api_fail() {
     // start api service
     let config_ref = get_default_test_config(Some(8354));
-    let expected_message = "test message sent to telegram".to_string();
+    let expected_message = "test message sent to telegram_service".to_string();
 
     // start api service
     let (api_thread, rt, tx) = start_api_service(

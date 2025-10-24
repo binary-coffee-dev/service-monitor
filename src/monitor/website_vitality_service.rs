@@ -5,7 +5,7 @@ use checkssl::CheckSSL;
 use reqwest::Client;
 
 use crate::config::Config;
-use crate::monitor::utils::ToMarkdown;
+use crate::utils::ToMarkdown;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Post {
@@ -26,26 +26,26 @@ pub enum RouteTest {
     GET(Get),
 }
 
-pub struct WebsiteService {
+pub struct WebsiteVitalityService {
     configs: Config,
 }
 
-impl WebsiteService {
-    pub fn new(configs: Config) -> WebsiteService {
-        WebsiteService { configs }
+impl WebsiteVitalityService {
+    pub fn new(configs: Config) -> WebsiteVitalityService {
+        WebsiteVitalityService { configs }
     }
 
     pub async fn summary(&self) -> Vec<String> {
         let mut errors = Vec::new();
 
-        errors.append(&mut self.api_vitally().await);
-        errors.append(&mut self.frontend_vitaly().await);
-        errors.append(&mut self.certificates_vitaly().await);
+        errors.append(&mut self.api_vitality().await);
+        errors.append(&mut self.frontend_vitality().await);
+        errors.append(&mut self.certificates_vitality().await);
 
         errors
     }
 
-    pub async fn api_vitally(&self) -> Vec<String> {
+    pub async fn api_vitality(&self) -> Vec<String> {
         let mut ret = Vec::new();
         let client = Client::new();
         if let Some(ref api_tests) = self.configs.api_tests {
@@ -56,7 +56,7 @@ impl WebsiteService {
         ret
     }
 
-    pub async fn frontend_vitaly(&self) -> Vec<String> {
+    pub async fn frontend_vitality(&self) -> Vec<String> {
         let mut ret = Vec::new();
         let client = Client::new();
         if let Some(ref frontend_tests) = self.configs.frontend_tests {
@@ -67,7 +67,7 @@ impl WebsiteService {
         ret
     }
 
-    pub async fn certificates_vitaly(&self) -> Vec<String> {
+    pub async fn certificates_vitality(&self) -> Vec<String> {
         let mut ret = Vec::new();
         if let Some(ref ssl_tests) = self.configs.ssl_tests {
             for get in ssl_tests.iter() {

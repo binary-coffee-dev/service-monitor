@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use mockall::automock;
 
 use crate::config::Config;
-use crate::monitor::telegram::models::{GetMyCommandsRes, GetUpdatesRes, SendMessageBody, Update};
+use crate::monitor::telegram_service::models::{GetMyCommandsRes, GetUpdatesRes, SendMessageBody, Update};
 
 use self::models::{BotCommand, SetMyCommandsBody};
 
@@ -99,7 +99,7 @@ impl TelegramService {
                                     content_type: content_type.clone(),
                                 });
                                 return Err(format!(
-                                    "Failing connecting to telegram api. {:?}",
+                                    "Failing connecting to telegram_service api. {:?}",
                                     err
                                 )
                                     .to_string());
@@ -116,7 +116,7 @@ impl TelegramService {
                         Err(err) => {
                             if times >= times_to_retry_telegram {
                                 return Err(format!(
-                                    "Failing connecting to telegram api. {:?}",
+                                    "Failing connecting to telegram_service api. {:?}",
                                     err
                                 )
                                     .to_string());

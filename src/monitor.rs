@@ -3,18 +3,16 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::config::Config;
-use crate::monitor::api::ApiService;
-use crate::monitor::telegram::TelegramService;
-use crate::monitor::telegram::TelegramServiceTrait;
-use crate::monitor::website::WebsiteService;
+use crate::api_server::ApiServer;
+use crate::monitor::telegram_service::TelegramService;
+use crate::monitor::telegram_service::TelegramServiceTrait;
+use crate::monitor::website_vitality_service::WebsiteVitalityService;
 use crate::telegram_monitor::TelegramMonitor;
 use crate::validator::Validator;
 use crate::web_monitor::WebMonitor;
 
-pub mod api;
-pub mod telegram;
-pub mod utils;
-pub mod website;
+pub mod telegram_service;
+pub mod website_vitality_service;
 
 pub struct Monitor {
     configs: Config,
@@ -42,7 +40,7 @@ impl Monitor {
         let pause = Arc::new(Mutex::new(false));
         let rt = tokio::runtime::Runtime::new().unwrap();
 
-        // start telegram command checker
+        // start telegram_service command checker
         let pause_ref = pause.clone();
         let config_ref = self.configs.clone();
         let validator_ref = Monitor::new_validator(self);
@@ -70,7 +68,7 @@ impl Monitor {
         let validator_ref = Monitor::new_validator(self);
         let api_thread = rt.spawn(async move {
             if config_ref.enable_api.unwrap() {
-                let api_service = ApiService::new(config_ref, validator_ref);
+                let api_service = ApiServer::new(config_ref, validator_ref);
                 api_service.start_api(None).await;
             }
         });
@@ -86,7 +84,7 @@ impl Monitor {
             } else {
                 Arc::new(Mutex::new(TelegramService::new(self.configs.clone())))
             },
-            Arc::new(Mutex::new(WebsiteService::new(self.configs.clone()))),
+            Arc::new(Mutex::new(WebsiteVitalityService::new(self.configs.clone()))),
         )))
     }
 }

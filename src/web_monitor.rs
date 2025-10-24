@@ -6,7 +6,7 @@ use tokio::time::sleep;
 
 use crate::config::Config;
 use crate::validator::Validator;
-use crate::monitor::utils::ToMarkdown;
+use crate::utils::ToMarkdown;
 
 pub struct WebMonitor {
     configs: Config,

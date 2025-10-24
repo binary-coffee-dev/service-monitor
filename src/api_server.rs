@@ -9,17 +9,17 @@ use tokio::sync::Mutex;
 use warp::Filter;
 
 use crate::config::Config;
-use crate::monitor::utils::ToMarkdown;
+use crate::utils::ToMarkdown;
 use crate::validator::Validator;
 
-pub struct ApiService {
+pub struct ApiServer {
     pub configs: Config,
     pub validator: Arc<Mutex<Validator>>,
 }
 
-impl ApiService {
-    pub fn new(configs: Config, validator: Arc<Mutex<Validator>>) -> ApiService {
-        ApiService { configs, validator }
+impl ApiServer {
+    pub fn new(configs: Config, validator: Arc<Mutex<Validator>>) -> ApiServer {
+        ApiServer { configs, validator }
     }
 
     pub async fn start_api(&self, kill_receiver: Option<Receiver<()>>) {
@@ -63,7 +63,7 @@ impl ApiService {
             .and(warp::header::<String>(AUTHORIZATION.as_str()))
             // inject auth token
             .and(warp::any().map(move || auth_token.clone()))
-            // inject telegram service reference
+            // inject telegram_service service reference
             .and(warp::any().map(move || validator_ref.clone()))
             .then(
                 |body: HashMap<String, String>,
@@ -71,17 +71,17 @@ impl ApiService {
                  auth_token: String,
                  validator: Arc<Mutex<Validator>>| async move {
                     // validate access token
-                    if !ApiService::validate_auth(&auth_token, &token) {
+                    if !ApiServer::validate_auth(&auth_token, &token) {
                         return warp::reply::with_status(
                             "FORBIDDEN",
                             warp::http::StatusCode::FORBIDDEN,
                         );
                     }
 
-                    // validate message to then notify to telegram
+                    // validate message to then notify to telegram_service
                     println!("Notification request: {:?}", body);
 
-                    // send message to telegram
+                    // send message to telegram_service
                     validator
                         .lock()
                         .await
@@ -121,7 +121,7 @@ impl ApiService {
 
 #[cfg(test)]
 mod tests {
-    use crate::monitor::api::ApiService;
+    use crate::api_server::ApiServer;
     use base64::prelude::BASE64_STANDARD;
     use base64::Engine;
 
@@ -133,19 +133,19 @@ mod tests {
     #[test]
     fn validate_auth_token_test() {
         // valid tokens
-        assert_eq!(true, ApiService::validate_auth("test", "Basic dGVzdA=="));
-        assert_eq!(true, ApiService::validate_auth("test", " Basic dGVzdA=="));
+        assert_eq!(true, ApiServer::validate_auth("test", "Basic dGVzdA=="));
+        assert_eq!(true, ApiServer::validate_auth("test", " Basic dGVzdA=="));
         assert_eq!(
             true,
-            ApiService::validate_auth("test", " Basic  dGVzdA==  ")
+            ApiServer::validate_auth("test", " Basic  dGVzdA==  ")
         );
 
         // invalid tokens
-        assert_eq!(false, ApiService::validate_auth("test", "dGVzdA==  "));
-        assert_eq!(false, ApiService::validate_auth("test", "Basi cdGVzdA=="));
-        assert_eq!(false, ApiService::validate_auth("tests", "Basic dGVzdA=="));
+        assert_eq!(false, ApiServer::validate_auth("test", "dGVzdA==  "));
+        assert_eq!(false, ApiServer::validate_auth("test", "Basi cdGVzdA=="));
+        assert_eq!(false, ApiServer::validate_auth("tests", "Basic dGVzdA=="));
 
         // invalid base64
-        assert_eq!(false, ApiService::validate_auth("tests", "Basic cdGVzdA=="));
+        assert_eq!(false, ApiServer::validate_auth("tests", "Basic cdGVzdA=="));
     }
 }
