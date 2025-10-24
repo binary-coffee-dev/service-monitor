@@ -91,24 +91,12 @@ The application configuration is a file with the following structure:
 
 All methods to run the project need to have the *config.json* file in the root directory of the project.
 
-### Build and run
-
-To build and run the project, execute the following commands:
-
-```shell
-// build project
-cargo build
-// run project
-cargo run
-```
-
 ### Run with docker
 
 To run the project with docker, execute the following command:
 
 ```shell
-docker build -t binary-monitor .
-docker run -d -p 6565:6565 -v ./config.json:/config.json --name binary-monitor binary-monitor
+docker run -d -p 6565:6565 -v ./config.json:/config.json --name binary-monitor ggjnez92/binary-monitor:2.1.0
 ```
 
 ### Run with docker-compose
@@ -118,7 +106,7 @@ First, use the following docker-compose.yml file:
 ```yaml
 services:
   binary-monitor:
-    build: .
+    image: ggjnez92/binary-monitor:2.1.0
     container_name: binary-monitor
     restart: always
     ports:
