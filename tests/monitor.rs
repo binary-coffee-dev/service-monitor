@@ -4,13 +4,13 @@ use httpmock::MockServer;
 use tokio::runtime::Runtime;
 use tokio::sync::Mutex;
 
-use sm::config::Config;
 use sm::monitor::Monitor;
-use sm::monitor::telegram_service::MockTelegramServiceTrait;
-use sm::monitor::website_vitality_service::{Get, RouteTest};
+use sm::monitor::services::config_service::ConfigService;
+use sm::monitor::services::telegram_service::MockTelegramServiceTrait;
+use sm::monitor::services::website_vitality_service::{Get, RouteTest};
 
-fn get_default_test_config(port: Option<u32>) -> Config {
-    Config {
+fn get_default_test_config(port: Option<u32>) -> ConfigService {
+    ConfigService {
         // service monitor
         enable_service_monitor: Some(true),
         api_tests: Some(Vec::new()),

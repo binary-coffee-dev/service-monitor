@@ -8,17 +8,17 @@ use tokio::sync::oneshot::Receiver;
 use tokio::sync::Mutex;
 use warp::Filter;
 
-use crate::config::Config;
-use crate::utils::ToMarkdown;
-use crate::validator::Validator;
+use crate::monitor::services::config_service::ConfigService;
+use crate::monitor::validator::Validator;
+use crate::monitor::utils::ToMarkdown;
 
 pub struct ApiServer {
-    pub configs: Config,
+    pub configs: ConfigService,
     pub validator: Arc<Mutex<Validator>>,
 }
 
 impl ApiServer {
-    pub fn new(configs: Config, validator: Arc<Mutex<Validator>>) -> ApiServer {
+    pub fn new(configs: ConfigService, validator: Arc<Mutex<Validator>>) -> ApiServer {
         ApiServer { configs, validator }
     }
 
@@ -121,7 +121,7 @@ impl ApiServer {
 
 #[cfg(test)]
 mod tests {
-    use crate::api_server::ApiServer;
+    use crate::monitor::api_server::ApiServer;
     use base64::prelude::BASE64_STANDARD;
     use base64::Engine;
 

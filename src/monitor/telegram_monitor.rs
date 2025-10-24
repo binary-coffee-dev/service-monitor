@@ -3,8 +3,8 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 
-use crate::utils::ToMarkdown;
-use crate::validator::Validator;
+use crate::monitor::utils::ToMarkdown;
+use crate::monitor::validator::Validator;
 
 pub struct TelegramMonitor {
     pause_service: Arc<Mutex<bool>>,

@@ -1,10 +1,10 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use crate::monitor::telegram_service::models::BotCommand;
-use crate::monitor::telegram_service::TelegramServiceTrait;
-use crate::utils::ToMarkdown;
-use crate::monitor::website_vitality_service::WebsiteVitalityService;
+use crate::monitor::services::telegram_service::models::{BotCommand, Update};
+use crate::monitor::services::telegram_service::TelegramServiceTrait;
+use crate::monitor::services::website_vitality_service::WebsiteVitalityService;
+use crate::monitor::utils::ToMarkdown;
 
 pub struct Validator {
     telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
@@ -104,7 +104,7 @@ impl Validator {
         self.telegram.lock().await.sync_commands().await;
     }
 
-    pub async fn get_all_updates(&self) -> Vec<crate::monitor::telegram_service::models::Update> {
+    pub async fn get_all_updates(&self) -> Vec<Update> {
         self.telegram.lock().await.get_all_updates().await
     }
 

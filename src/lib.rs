@@ -1,15 +1,9 @@
-use crate::config::Config;
 use crate::monitor::Monitor;
+use crate::monitor::services::config_service::ConfigService;
 
-pub mod config;
 pub mod monitor;
-pub mod telegram_monitor;
-pub mod validator;
-pub mod web_monitor;
-pub mod utils;
-pub mod api_server;
 
 pub async fn run() {
-    let monitor = Monitor::new(Config::read_configurations(), None);
+    let monitor = Monitor::new(ConfigService::read_configurations(), None);
     monitor.start().await;
 }

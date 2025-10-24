@@ -8,12 +8,14 @@ use tokio::sync::oneshot::Sender;
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
-use sm::config::Config;
-use sm::api_server::ApiServer;
-use sm::monitor::telegram_service::{MockTelegramServiceTrait, TelegramServiceTrait};
+use sm::monitor::api_server::ApiServer;
+use sm::monitor::services::config_service::ConfigService;
+use sm::monitor::services::telegram_service::{MockTelegramServiceTrait, TelegramServiceTrait};
+use sm::monitor::services::website_vitality_service::WebsiteVitalityService;
+use sm::monitor::validator::Validator;
 
-fn get_default_test_config(port: Option<u32>) -> Config {
-    Config {
+fn get_default_test_config(port: Option<u32>) -> ConfigService {
+    ConfigService {
         // service monitor
         enable_service_monitor: Some(false),
         api_tests: Some(Vec::new()),
@@ -35,16 +37,16 @@ fn get_default_test_config(port: Option<u32>) -> Config {
 }
 
 fn start_api_service(
-    config: Config,
+    config: ConfigService,
     telegram_service: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
 ) -> (JoinHandle<()>, Runtime, Sender<()>) {
     let rt = Runtime::new().unwrap();
 
     let (tx, rx) = tokio::sync::oneshot::channel();
     let api_thread = rt.spawn(async move {
-        let validator = Arc::new(Mutex::new(sm::validator::Validator::new(
+        let validator = Arc::new(Mutex::new(Validator::new(
             telegram_service.clone(),
-            Arc::new(Mutex::new(sm::monitor::website_vitality_service::WebsiteVitalityService::new(
+            Arc::new(Mutex::new(WebsiteVitalityService::new(
                 config.clone(),
             ))),
         )));
@@ -56,7 +58,7 @@ fn start_api_service(
     (api_thread, rt, tx)
 }
 
-fn get_url(config: Config) -> String {
+fn get_url(config: ConfigService) -> String {
     let host = config.host.clone().unwrap();
     let port = config.port.clone().unwrap();
     format!("http://{}:{}/notification", host, port)
@@ -66,7 +68,7 @@ fn get_url(config: Config) -> String {
 async fn test_send_notification_flow() {
     // start api service
     let config_ref = get_default_test_config(Some(8353));
-    let expected_message = "test message sent to telegram_service".to_string();
+    let expected_message = "test message sent to telegram service".to_string();
 
     let telegram_service_share = Arc::new(Mutex::new(MockTelegramServiceTrait::new()));
 
@@ -116,7 +118,7 @@ async fn test_send_notification_flow() {
 async fn test_authorization_api_fail() {
     // start api service
     let config_ref = get_default_test_config(Some(8354));
-    let expected_message = "test message sent to telegram_service".to_string();
+    let expected_message = "test message sent to telegram service".to_string();
 
     // start api service
     let (api_thread, rt, tx) = start_api_service(

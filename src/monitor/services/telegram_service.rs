@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use mockall::automock;
 
-use crate::config::Config;
-use crate::monitor::telegram_service::models::{GetMyCommandsRes, GetUpdatesRes, SendMessageBody, Update};
+use crate::monitor::services::config_service::ConfigService;
+use crate::monitor::services::telegram_service::models::{GetMyCommandsRes, GetUpdatesRes, SendMessageBody, Update};
 use self::models::{BotCommand, SetMyCommandsBody};
 
 pub mod models;
@@ -21,7 +21,7 @@ enum TelegramRequest {
 
 #[derive(Clone)]
 pub struct TelegramService {
-    configs: Config,
+    configs: ConfigService,
     api_url: String,
     pending_messages: Vec<TelegramRequest>,
 }
@@ -38,7 +38,7 @@ pub trait TelegramServiceTrait {
 }
 
 impl TelegramService {
-    pub fn new(configs: Config) -> TelegramService {
+    pub fn new(configs: ConfigService) -> TelegramService {
         let api_url = String::from(format!(
             "https://api.telegram.org/bot{}",
             configs.telegram_bot_token.clone().unwrap()

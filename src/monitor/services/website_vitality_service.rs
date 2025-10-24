@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use checkssl::CheckSSL;
 use reqwest::Client;
 
-use crate::config::Config;
-use crate::utils::ToMarkdown;
+use crate::monitor::services::config_service::ConfigService;
+use crate::monitor::utils::ToMarkdown;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Post {
@@ -26,11 +26,11 @@ pub enum RouteTest {
 }
 
 pub struct WebsiteVitalityService {
-    configs: Config,
+    configs: ConfigService,
 }
 
 impl WebsiteVitalityService {
-    pub fn new(configs: Config) -> WebsiteVitalityService {
+    pub fn new(configs: ConfigService) -> WebsiteVitalityService {
         WebsiteVitalityService { configs }
     }
 

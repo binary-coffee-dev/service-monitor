@@ -2,10 +2,10 @@ use std::env::current_dir;
 use std::{fs::File, io::BufReader};
 use serde::Deserialize;
 
-use crate::monitor::website_vitality_service::{Get, RouteTest};
+use crate::monitor::services::website_vitality_service::{Get, RouteTest};
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct Config {
+pub struct ConfigService {
     // service monitor
     pub enable_service_monitor: Option<bool>,
     pub api_tests: Option<Vec<RouteTest>>,
@@ -27,9 +27,9 @@ pub struct Config {
     pub api_token: Option<String>,
 }
 
-impl Config {
-    pub fn read_configurations() -> Config {
-        let mut configs = Config::default();
+impl ConfigService {
+    pub fn read_configurations() -> ConfigService {
+        let mut configs = ConfigService::default();
 
         // todo: take this path from the application args
         let path = String::from(format!(
@@ -43,7 +43,7 @@ impl Config {
                 let reader = BufReader::new(file);
 
                 // Read the JSON contents of the file as an instance of `User`.
-                configs = Config::merge_configs_with_defalt(
+                configs = ConfigService::merge_configs_with_defalt(
                     serde_json::from_reader(reader)
                         .expect("Error deserializing configuration json file."),
                 );
@@ -61,8 +61,8 @@ impl Config {
         return configs;
     }
 
-    fn merge_configs_with_defalt(mut config: Config) -> Config {
-        let default = Config::default();
+    fn merge_configs_with_defalt(mut config: ConfigService) -> ConfigService {
+        let default = ConfigService::default();
         // service monitor
         if config.enable_service_monitor.is_none() {
             config.enable_service_monitor = default.enable_service_monitor;
@@ -108,8 +108,8 @@ impl Config {
         return config;
     }
 
-    fn default() -> Config {
-        Config {
+    fn default() -> ConfigService {
+        ConfigService {
             // service monitor
             enable_service_monitor: Some(true),
             api_tests: Some(Vec::new()),
@@ -133,12 +133,12 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
-    use super::Config;
+    use super::ConfigService;
 
     #[test]
     fn deserialize_api_endpoints_test() {
         let json_example = "{\"enable_api\": true, \"host\": \"127.0.0.1\", \"port\": 6565, \"api_token\": \"example_token\", \"telegram_bot_token\": \"123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11\", \"groups\": [149770819], \"website_monitor_timeout\": 20, \"api_tests\": [{\"type\": \"POST\", \"url\": \"https://api.binarycoffee.dev/graphql\", \"body\": \"{}\", \"content_type\": \"application/json\"}, {\"type\": \"GET\", \"url\": \"https://api.binarycoffee.dev/api/sitemap\"}], \"frontend_tests\": [{\"type\": \"GET\", \"url\": \"https://binarycoffee.dev\"}, {\"type\": \"GET\", \"url\": \"https://binarycoffee.dev/post/bienvenidos-al-blog-binary-coffeermdcl\"}, {\"type\": \"GET\", \"url\": \"https://binarycoffee.dev/users/guille\"}], \"ssl_tests\": [{\"url\": \"binarycoffee.dev\"}, {\"url\": \"api.binarycoffee.dev\"}]}".to_string();
-        let configs = Config::merge_configs_with_defalt(
+        let configs = ConfigService::merge_configs_with_defalt(
             serde_json::from_str(&json_example)
                 .expect("Error deserializing configuration json file."),
         );
@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn merge_configs_test() {
-        let mut config = Config {
+        let mut config = ConfigService {
             // service monitor
             enable_service_monitor: None,
             api_tests: None,
@@ -169,7 +169,7 @@ mod tests {
             enable_api: None,
         };
 
-        config = Config::merge_configs_with_defalt(config);
+        config = ConfigService::merge_configs_with_defalt(config);
 
         // service monitor
         assert!(config.enable_service_monitor.is_some());

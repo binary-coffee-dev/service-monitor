@@ -1,20 +1,23 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use crate::config::Config;
-use crate::api_server::ApiServer;
-use crate::monitor::telegram_service::TelegramService;
-use crate::monitor::telegram_service::TelegramServiceTrait;
-use crate::monitor::website_vitality_service::WebsiteVitalityService;
-use crate::telegram_monitor::TelegramMonitor;
-use crate::validator::Validator;
-use crate::web_monitor::WebMonitor;
+use crate::monitor::api_server::ApiServer;
+use crate::monitor::services::config_service::ConfigService;
+use crate::monitor::services::telegram_service::{TelegramService, TelegramServiceTrait};
+use crate::monitor::services::website_vitality_service::WebsiteVitalityService;
+use crate::monitor::telegram_monitor::TelegramMonitor;
+use crate::monitor::validator::Validator;
+use crate::monitor::web_monitor::WebMonitor;
 
-pub mod telegram_service;
-pub mod website_vitality_service;
+pub mod services;
+pub mod telegram_monitor;
+pub mod web_monitor;
+pub mod api_server;
+pub mod validator;
+pub mod utils;
 
 pub struct Monitor {
-    configs: Config,
+    configs: ConfigService,
     telegram_service: Option<Arc<Mutex<dyn TelegramServiceTrait + Send>>>,
 }
 
@@ -22,7 +25,7 @@ pub struct Monitor {
 /// monitoring for surveillance, and an API service for streamlined data access.
 impl Monitor {
     pub fn new(
-        configs: Config,
+        configs: ConfigService,
         telegram_ins: Option<Arc<Mutex<dyn TelegramServiceTrait + Send>>>,
     ) -> Monitor {
         let mut telegram_service = telegram_ins;

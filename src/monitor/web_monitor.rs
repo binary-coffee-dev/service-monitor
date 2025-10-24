@@ -3,18 +3,18 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 
-use crate::config::Config;
-use crate::validator::Validator;
-use crate::utils::ToMarkdown;
+use crate::monitor::services::config_service::ConfigService;
+use crate::monitor::utils::ToMarkdown;
+use crate::monitor::validator::Validator;
 
 pub struct WebMonitor {
-    configs: Config,
+    configs: ConfigService,
     pause_service: Arc<Mutex<bool>>,
     validator: Arc<Mutex<Validator>>,
 }
 
 impl WebMonitor {
-    pub fn new(configs: Config, validator: Arc<Mutex<Validator>>, pause_service: Arc<Mutex<bool>>) -> WebMonitor {
+    pub fn new(configs: ConfigService, validator: Arc<Mutex<Validator>>, pause_service: Arc<Mutex<bool>>) -> WebMonitor {
         WebMonitor { configs, pause_service, validator }
     }
 
