@@ -119,6 +119,16 @@ Ex:
 Authorization: Basic dGVzdA==
 ```
 
+## Deploy to dockerhub
+
+```shell
+export VERSION=2.1.0
+docker build -t ggjnez92/binary-monitor:$VERSION .
+docker tag ggjnez92/binary-monitor:$VERSION ggjnez92/binary-monitor:latest
+docker push ggjnez92/binary-monitor:$VERSION
+docker push ggjnez92/binary-monitor:latest
+```
+
 ## toDo
 
 - [ ] Check https://docs.rs/warp/latest/warp/test/index.html to improve integration test
