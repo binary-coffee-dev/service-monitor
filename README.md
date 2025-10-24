@@ -1,31 +1,38 @@
-# BinaryCoffee service monitor
+# Binary monitor
 
-This service monitors BinaryCoffee website and promptly notified potential errors via Telegram for efficient troubleshooting.
-The service can be re-utilized just by updating the configuration file to your needs.
+This service monitors BinaryCoffee website and promptly notified potential errors via Telegram for efficient
+troubleshooting. The service can be re-utilized just by updating the configuration file to your needs.
 
-## List of monitored services
+## List of features
 
-- [x] Application vitality
-- [x] Application certificate
-- [x] Application frontend is working
-- [x] Endpoint to rise directly notifications
+- [x] Application vitality: Allows to monitor the vitality of the application frontend and api endpoints.
+- [x] Application certificate: Monitors the SSL certificates of the domains defined in the configuration file.
+- [x] Application frontend vitality: Monitors the frontend endpoints defined in the configuration file.
+- [x] Endpoint to rise directly notifications: Provides an endpoint to directly send notifications to the Telegram
+  channel.
 
-## Project dev
-
-### Configurations
+## Configurations
 
 The application configurations is a file with the following structure:
 
 ```
 {
-  // notification api configuration
+  // Notification api configuration
+  // enable or disable the notification api
   "enable_api": true,
+  // host where the api will be exposed
   "host": "127.0.0.1",
+  // port where the api will be exposed
   "port": 6565,
+  // token to access the api (to use the basic auth you need to encode it in base64)
   "api_token": "example_token",
 
   // telegram bot integration
+  // enable or disable telegram integration (if disabled, not commands will be monitored form telegram)
+  "enable_telegram": true,
+  // telegram bot token
   "telegram_bot_token": "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
+  // group chat ids to send the notifications
   "groups": [149770819],
 
   // time interval to automatically check the monitored system
@@ -34,9 +41,13 @@ The application configurations is a file with the following structure:
   // list of api endpoints to check
   "api_tests": [
     {
+      // type of request (GET, POST)
       "type": "POST",
+      // endpoint url
       "url": "https://api.binarycoffee.dev/graphql",
+      // body of the request
       "body": "{}",
+      // content type of the request
       "content_type": "application/json"
     },
     {
@@ -48,7 +59,9 @@ The application configurations is a file with the following structure:
   // list of frontend endpoints to check
   "frontend_tests": [
     {
+      // type of request (GET)
       "type": "GET",
+      // frontend url
       "url": "https://binarycoffee.dev"
     },
     {
@@ -64,6 +77,7 @@ The application configurations is a file with the following structure:
   // lise of domains to validate SSL certificate
   "ssl_tests": [
     {
+      // domain to check
       "url": "binarycoffee.dev"
     },
     {
@@ -75,65 +89,44 @@ The application configurations is a file with the following structure:
 
 > Note: the *config.json* file should be in the same folder that the application.
 
-### Build/Start project
+## Run project
 
-```
+All method to run the project need to have the *config.json* file in the root directory of the project.
+
+### Build and run
+
+To build and run the project, execute the following commands:
+
+```shell
 // build project
 cargo build
-
 // run project
 cargo run
 ```
 
-### Start with docker
+### Run with docker
 
-To start the project with docker run the following command.
-
-```
-docker-compose up --build -d
-```
-
-> Note: before execute the previous command, create the `config.json` in the root directory of the project.
-
-### Notification API
-
-The notification API is used to manually prompt notifications in Telegram.
-This could be used to integrate your project with the monitoring service, and sent useful notifications to the Telegram chanel.
-
-The integration is quite simple, and it can be done but filling the information in the configuration file, and then make a POST request to the endpoint `/notification`.
-The body of the request should be a **json** with the following format:
-
-```json
-{
-  "message": "my message"
-}
-```
-
-For security reasons, the request use basic auth.
-This means that you need to inject in the POST request the token in the following format:
-
-```text
-Authorization: Basic <base64_token>
-
-Ex:
-Authorization: Basic dGVzdA==
-```
-
-## Deploy to dockerhub
+To run the project with docker, execute the following command:
 
 ```shell
-export VERSION=2.1.0
-docker build -t ggjnez92/binary-monitor:$VERSION .
-docker tag ggjnez92/binary-monitor:$VERSION ggjnez92/binary-monitor:latest
-docker push ggjnez92/binary-monitor:$VERSION
-docker push ggjnez92/binary-monitor:latest
+docker build -t binary-monitor .
+docker run -d -p 6565:6565 -v ./config.json:/config.json --name binary-monitor binary-monitor
 ```
 
-## toDo
+### Run with docker-compose
 
-- [ ] Check https://docs.rs/warp/latest/warp/test/index.html to improve integration test
-- [ ] Add help, and support for application arguments.
-- [ ] Add integration tests (code is not well tested)
-- [ ] Allow to define the default route for the configuration file
-- [ ] Before test an url, ping the domain to see if is available
+First use the follow docker-compose.yml file:
 
+```yaml
+services:
+  binary-monitor:
+    image: ggjnez92/binary-monitor:2.1.0
+    container_name: binary-monitor
+    restart: always
+    ports:
+      - 6566:6566/tcp
+    volumes:
+      - ./config.json:/config.json
+```
+
+Then run the following command: `docker-compose up --build -d`

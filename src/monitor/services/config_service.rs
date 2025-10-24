@@ -123,7 +123,7 @@ impl ConfigService {
             telegram_bot_token: None,
             groups: Some(Vec::new()),
             // api
-            host: Some("127.0.0.1".to_string()),
+            host: Some("0.0.0.0".to_string()),
             port: Some(5353),
             api_token: Some("service_token".to_string()),
             enable_api: Some(true),
