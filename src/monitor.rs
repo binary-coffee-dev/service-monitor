@@ -45,7 +45,7 @@ impl Monitor {
         // start telegram_service command checker
         let pause_ref = pause.clone();
         let config_ref = self.configs.clone();
-        let validator_ref = Monitor::new_validator(self);
+        let validator_ref = self.new_validator();
         let telegram_monitor_thread = rt.spawn(async move {
             if config_ref.enable_telegram_bot_commands.unwrap() {
                 let telegram_monitor = TelegramMonitor::new(validator_ref, pause_ref, config_ref);
@@ -57,7 +57,7 @@ impl Monitor {
         // start web monitoring
         let config_ref = self.configs.clone();
         let pause_ref = pause.clone();
-        let validator_ref = Monitor::new_validator(self);
+        let validator_ref = self.new_validator();
         let website_monitor = rt.spawn(async move {
             if config_ref.enable_monitoring_service.unwrap() {
                 let web_monitor = WebMonitor::new(config_ref, validator_ref, pause_ref);
@@ -67,7 +67,7 @@ impl Monitor {
 
         // start api service
         let config_ref = self.configs.clone();
-        let validator_ref = Monitor::new_validator(self);
+        let validator_ref = self.new_validator();
         let api_thread = rt.spawn(async move {
             if config_ref.enable_api.unwrap() {
                 let api_service = ApiServer::new(config_ref, validator_ref);
