@@ -3,6 +3,7 @@ name: Rust
 on:
   push:
     branches: [ "master" ]
+    tags: [ 'v[0-9]+.[0-9]+.[0-9]+' ]
   pull_request:
     branches: [ "master" ]
 
@@ -21,33 +22,31 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
   
-#  deploy:
-#
-#    needs: [ build ]
-#    if: github.ref == 'refs/heads/master'
-#
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - uses: actions/checkout@v3
-#
-#      - name: Create config file
-#        run: echo '${{ secrets.CONFIG_FILE }}' >> config.json
-#
-#      - name: Copy project to the hosting
-#        uses: easingthemes/ssh-deploy@v2.1.5
-#        env:
-#          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
-#          ARGS: "-rltgoDzvO --delete"
-#          SOURCE: ""
-#          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
-#          REMOTE_USER: ${{ secrets.REMOTE_USER }}
-#          TARGET: ${{ secrets.REMOTE_TARGET }}
-#
-#      - name: Deploy project with docker in hosting
-#        uses: garygrossgarten/github-action-ssh@release
+  deploy:
+
+    needs: [ build ]
+    if: endsWith('master', github.ref)
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Extract version from tag
+        id: version
+        run: |
+          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+          echo "VERSION=${GITHUB_REF#refs/tags/v}"
+          echo $GITHUB_ENV
+
+#      - name: Login to Docker Hub
+#        uses: docker/login-action@v3
 #        with:
-#          command: cd ${{ secrets.REMOTE_TARGET }} && docker-compose up --build -d
-#          host: ${{ secrets.REMOTE_HOST }}
-#          username: ${{ secrets.REMOTE_USER }}
-#          privateKey: ${{ secrets.SERVER_SSH_KEY}}
+#          username: ${{ vars.DOCKERHUB_USERNAME }}
+#          password: ${{ secrets.DOCKERHUB_TOKEN }}
+#
+#      - name: Build and push
+#        uses: docker/build-push-action@v6
+#        with:
+#          push: false
+#          tags: |
+#            ${{ vars.DOCKERHUB_USERNAME }}/binary-monitor:latest
+#            ${{ vars.DOCKERHUB_USERNAME }}/binary-monitor:latest
