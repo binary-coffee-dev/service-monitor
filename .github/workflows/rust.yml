@@ -36,6 +36,12 @@ jobs:
           echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
           echo "----------------------"
           echo "VERSION=${GITHUB_REF#refs/tags/v}"
+          echo "----------------------"
+
+      - name: Show version
+        run: |
+          echo "----------------------"
+          echo "Version is ${{ env.VERSION }}"
           echo "$VERSION"
           echo "----------------------"
 
