@@ -36,7 +36,7 @@ jobs:
           echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
           echo "----------------------"
           echo "VERSION=${GITHUB_REF#refs/tags/v}"
-          echo "${{ env.VERSION }}"
+          echo "$VERSION"
           echo "----------------------"
 
 #      - name: Login to Docker Hub
