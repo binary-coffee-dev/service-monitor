@@ -1,9 +1,8 @@
-use async_trait::async_trait;
-use mockall::automock;
-
-use crate::monitor::services::config_service::ConfigService;
-use crate::monitor::services::telegram_service::models::{GetMyCommandsRes, GetUpdatesRes, SendMessageBody, Update};
 use self::models::{BotCommand, SetMyCommandsBody};
+use crate::monitor::services::config_service::ConfigService;
+use crate::monitor::services::telegram_service::models::{
+    GetMyCommandsRes, GetUpdatesRes, SendMessageBody, Update,
+};
 
 pub mod models;
 
@@ -26,21 +25,11 @@ pub struct TelegramService {
     pending_messages: Vec<TelegramRequest>,
 }
 
-#[automock]
-#[async_trait]
-pub trait TelegramServiceTrait {
-    async fn get_all_updates(&mut self) -> Vec<Update>;
-    async fn send_pendings_messages(&mut self);
-    async fn send_message(&mut self, text: String, groups: &Option<Vec<i64>>);
-    async fn sync_commands(&mut self);
-    async fn set_commands(&mut self, commands: Vec<BotCommand>);
-    async fn get_commands(&mut self) -> Vec<BotCommand>;
-}
-
 impl TelegramService {
     pub fn new(configs: ConfigService) -> TelegramService {
         let api_url = String::from(format!(
-            "https://api.telegram.org/bot{}",
+            "{}/bot{}",
+            configs.telegram_api_url.clone().unwrap(),
             configs.telegram_bot_token.clone().unwrap()
         ));
         TelegramService {
@@ -101,7 +90,7 @@ impl TelegramService {
                                     "Failing connecting to telegram_service api. {:?}",
                                     err
                                 )
-                                    .to_string());
+                                .to_string());
                             }
                         }
                     }
@@ -118,7 +107,7 @@ impl TelegramService {
                                     "Failing connecting to telegram_service api. {:?}",
                                     err
                                 )
-                                    .to_string());
+                                .to_string());
                             }
                         }
                     }
@@ -147,11 +136,8 @@ impl TelegramService {
         let client = reqwest::Client::new();
         return client.get(url.to_owned()).send().await;
     }
-}
 
-#[async_trait]
-impl TelegramServiceTrait for TelegramService {
-    async fn get_all_updates(&mut self) -> Vec<Update> {
+    pub async fn get_all_updates(&mut self) -> Vec<Update> {
         let mut updates_list = Vec::new();
         let mut offset = 0;
         let limit = 100;
@@ -169,7 +155,7 @@ impl TelegramServiceTrait for TelegramService {
         return updates_list;
     }
 
-    async fn send_pendings_messages(&mut self) {
+    pub async fn send_pendings_messages(&mut self) {
         let mut pendins: Vec<TelegramRequest> = Vec::new();
         self.pending_messages.push(TelegramRequest::Get {
             url: "some".to_string(),
@@ -182,7 +168,7 @@ impl TelegramServiceTrait for TelegramService {
         }
     }
 
-    async fn send_message(&mut self, text: String, groups: &Option<Vec<i64>>) {
+    pub async fn send_message(&mut self, text: String, groups: &Option<Vec<i64>>) {
         let groups_ids = if let Some(ids) = groups {
             ids.clone()
         } else {
@@ -219,7 +205,7 @@ impl TelegramServiceTrait for TelegramService {
         }
     }
 
-    async fn sync_commands(&mut self) {
+    pub async fn sync_commands(&mut self) {
         let commands = vec![
             BotCommand {
                 command: "/check_all".to_string(),
@@ -270,7 +256,7 @@ impl TelegramServiceTrait for TelegramService {
         }
     }
 
-    async fn get_commands(&mut self) -> Vec<BotCommand> {
+    pub async fn get_commands(&mut self) -> Vec<BotCommand> {
         let route = String::from(format!("{}/getMyCommands", self.api_url));
         let res = self
             .retry_request(&TelegramRequest::Get { url: route })

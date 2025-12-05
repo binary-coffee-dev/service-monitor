@@ -3,14 +3,15 @@ use base64::Engine;
 use reqwest::header::AUTHORIZATION;
 use std::collections::HashMap;
 use std::net::SocketAddr;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use tokio::sync::oneshot::Receiver;
 use tokio::sync::Mutex;
 use warp::Filter;
 
 use crate::monitor::services::config_service::ConfigService;
-use crate::monitor::validator::Validator;
 use crate::monitor::utils::ToMarkdown;
+use crate::monitor::validator::Validator;
 
 pub struct ApiServer {
     pub configs: ConfigService,
@@ -22,7 +23,7 @@ impl ApiServer {
         ApiServer { configs, validator }
     }
 
-    pub async fn start_api(&self, kill_receiver: Option<Receiver<()>>) {
+    pub async fn start_api(&self, running_flag: Option<Arc<Mutex<AtomicBool>>>) {
         let addr_str = format!(
             "{}:{}",
             self.configs.clone().api_host.unwrap(),
@@ -31,18 +32,36 @@ impl ApiServer {
         let addr: SocketAddr = addr_str.parse().unwrap();
         println!("Server started in host: {}", addr.to_string());
 
-        match kill_receiver {
+        match running_flag {
             None => {
-                warp::serve(self.routes()).run(addr).await;
+                self.start_basic_server(addr).await;
             }
-            Some(rx) => {
+            Some(flag) => {
+                let (tx, rx): (tokio::sync::oneshot::Sender<()>, Receiver<()>) =
+                    tokio::sync::oneshot::channel();
+                let stop_server_thread = tokio::spawn(async move {
+                    loop {
+                        let running = flag.lock().await;
+                        if !running.load(std::sync::atomic::Ordering::SeqCst) {
+                            let _ = tx.send(());
+                            break;
+                        }
+                        drop(running);
+                        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                    }
+                });
                 let (_addr, server) =
                     warp::serve(self.routes()).bind_with_graceful_shutdown(addr, async {
                         rx.await.ok();
                     });
-                server.await;
+
+                let _ = tokio::join!(stop_server_thread, server);
             }
         };
+    }
+
+    async fn start_basic_server(&self, addr: SocketAddr) {
+        warp::serve(self.routes()).run(addr).await;
     }
 
     pub fn routes(
@@ -135,10 +154,7 @@ mod tests {
         // valid tokens
         assert_eq!(true, ApiServer::validate_auth("test", "Basic dGVzdA=="));
         assert_eq!(true, ApiServer::validate_auth("test", " Basic dGVzdA=="));
-        assert_eq!(
-            true,
-            ApiServer::validate_auth("test", " Basic  dGVzdA==  ")
-        );
+        assert_eq!(true, ApiServer::validate_auth("test", " Basic  dGVzdA==  "));
 
         // invalid tokens
         assert_eq!(false, ApiServer::validate_auth("test", "dGVzdA==  "));

@@ -1,15 +1,16 @@
+use crate::monitor::services::config_service::ConfigService;
+use crate::monitor::utils::ToMarkdown;
+use crate::monitor::validator::Validator;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
-use crate::monitor::services::config_service::ConfigService;
-use crate::monitor::utils::ToMarkdown;
-use crate::monitor::validator::Validator;
 
 pub struct TelegramMonitor {
     pause_service: Arc<Mutex<bool>>,
     validator: Arc<Mutex<Validator>>,
-    config: ConfigService
+    config: ConfigService,
 }
 
 impl TelegramMonitor {
@@ -25,9 +26,9 @@ impl TelegramMonitor {
         }
     }
 
-    pub async fn start_monitoring(&self) {
-        TelegramMonitor::run_commands_sync(self).await;
-        TelegramMonitor::run_telegram_monitor(self).await;
+    pub async fn start_monitoring(&self, running_flag: Option<Arc<Mutex<AtomicBool>>>) {
+        self.run_commands_sync().await;
+        self.run_telegram_monitor(running_flag).await;
     }
 
     async fn run_commands_sync(&self) {
@@ -36,8 +37,16 @@ impl TelegramMonitor {
         println!("commands: {:?}", commands);
     }
 
-    async fn run_telegram_monitor(&self) {
+    async fn run_telegram_monitor(&self, running_flag: Option<Arc<Mutex<AtomicBool>>>) {
         loop {
+            if let Some(flag) = &running_flag {
+                let running = flag.lock().await;
+                if !running.load(std::sync::atomic::Ordering::SeqCst) {
+                    break;
+                }
+                drop(running);
+            }
+
             self.validator.lock().await.send_pending_messages().await;
             let updates = self.validator.lock().await.get_all_updates().await;
             if !updates.is_empty() {
@@ -129,7 +138,10 @@ impl TelegramMonitor {
                     }
                 }
             }
-            sleep(Duration::from_secs(self.config.retrieve_commands_interval.unwrap())).await;
+            sleep(Duration::from_secs(
+                self.config.retrieve_commands_interval.unwrap(),
+            ))
+            .await;
         }
     }
 

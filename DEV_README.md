@@ -47,11 +47,8 @@ Authorization: Basic dGVzdA==
 ## Deploy to dockerhub
 
 ```shell
-export VERSION=2.2.0
-docker build -t ggjnez92/binary-monitor:$VERSION .
-docker tag ggjnez92/binary-monitor:$VERSION ggjnez92/binary-monitor:latest
-docker push ggjnez92/binary-monitor:$VERSION
-docker push ggjnez92/binary-monitor:latest
+git tag vX.Y.Z
+git push --tags
 ```
 
 ## toDo

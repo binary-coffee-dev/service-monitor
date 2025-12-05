@@ -1,3 +1,4 @@
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -26,9 +27,17 @@ impl WebMonitor {
         }
     }
 
-    pub async fn run_website_monitor(&self) {
+    pub async fn run_website_monitor(&self, running_flag: Option<Arc<Mutex<AtomicBool>>>) {
         let mut pause_time_ac = 0;
         loop {
+            if let Some(flag) = &running_flag {
+                let running = flag.lock().await;
+                if !running.load(std::sync::atomic::Ordering::SeqCst) {
+                    break;
+                }
+                drop(running);
+            }
+
             if pause_time_ac >= self.configs.pause_reminder_interval.unwrap() {
                 pause_time_ac = 0;
                 self.validator

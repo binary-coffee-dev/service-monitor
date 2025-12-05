@@ -2,18 +2,18 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::monitor::services::telegram_service::models::{BotCommand, Update};
-use crate::monitor::services::telegram_service::TelegramServiceTrait;
+use crate::monitor::services::telegram_service::TelegramService;
 use crate::monitor::services::website_vitality_service::WebsiteVitalityService;
 use crate::monitor::utils::ToMarkdown;
 
 pub struct Validator {
-    telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
+    telegram: Arc<Mutex<TelegramService>>,
     web: Arc<Mutex<WebsiteVitalityService>>,
 }
 
 impl Validator {
     pub fn new(
-        telegram: Arc<Mutex<dyn TelegramServiceTrait + Send>>,
+        telegram: Arc<Mutex<TelegramService>>,
         web: Arc<Mutex<WebsiteVitalityService>>,
     ) -> Validator {
         Validator { telegram, web }

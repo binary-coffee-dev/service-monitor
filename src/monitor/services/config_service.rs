@@ -1,6 +1,6 @@
+use serde::Deserialize;
 use std::env::current_dir;
 use std::{fs::File, io::BufReader};
-use serde::Deserialize;
 
 use crate::monitor::services::website_vitality_service::{Get, RouteTest};
 
@@ -11,6 +11,7 @@ pub struct ConfigService {
 
     // telegram_service
     pub enable_telegram_bot_commands: Option<bool>,
+    pub telegram_api_url: Option<String>,
     pub retrieve_commands_interval: Option<u64>,
     pub telegram_bot_token: Option<String>,
     pub groups: Option<Vec<i64>>,
@@ -34,7 +35,6 @@ impl ConfigService {
     pub fn read_configurations() -> ConfigService {
         let mut configs = ConfigService::default();
 
-        // todo: take this path from the application args
         let path = String::from(format!(
             "{}/config.json",
             current_dir().unwrap().display().to_string()
@@ -52,82 +52,71 @@ impl ConfigService {
                 );
             }
             Err(_) => {
-                println!("File '{}' couldn't be opened.", path);
+                println!("Configuration files doesn't exist.");
             }
         };
 
-        if configs.telegram_bot_token.is_none() {
-            panic!("Telegram bot token wasn't set in the configurations.");
-        }
-        // println!("{:?}", configs);
-
-        return configs;
+        configs
     }
 
     fn merge_configs_with_defalt(mut config: ConfigService) -> ConfigService {
         let default = ConfigService::default();
         // service monitor
-        if config.enable_monitoring_service.is_none() {
-            config.enable_monitoring_service = default.enable_monitoring_service;
-        }
-        if config.api_tests.is_none() {
-            config.api_tests = default.api_tests;
-        }
-        if config.frontend_tests.is_none() {
-            config.frontend_tests = default.frontend_tests;
-        }
-        if config.website_monitoring_interval.is_none() {
-            config.website_monitoring_interval = default.website_monitoring_interval;
-        }
-        if config.ssl_tests.is_none() {
-            config.ssl_tests = default.ssl_tests;
-        }
-        if config.pause_reminder_interval.is_none() {
-            config.pause_reminder_interval = default.pause_reminder_interval;
-        }
-        if config.times_to_retry_after_error.is_none() {
-            config.times_to_retry_after_error = default.times_to_retry_after_error;
-        }
+        config.enable_monitoring_service = config
+            .enable_monitoring_service
+            .or_else(|| default.enable_monitoring_service);
+        config.api_tests = config.api_tests.or_else(|| default.api_tests);
+        config.frontend_tests = config.frontend_tests.or_else(|| default.frontend_tests);
+        config.website_monitoring_interval = config
+            .website_monitoring_interval
+            .or_else(|| default.website_monitoring_interval);
+        config.website_monitoring_interval = config
+            .website_monitoring_interval
+            .or_else(|| default.website_monitoring_interval);
+        config.ssl_tests = config.ssl_tests.or_else(|| default.ssl_tests);
+        config.pause_reminder_interval = config
+            .pause_reminder_interval
+            .or_else(|| default.pause_reminder_interval);
+        config.times_to_retry_after_error = config
+            .times_to_retry_after_error
+            .or_else(|| default.times_to_retry_after_error);
+
         // telegram_service
-        if config.enable_telegram_bot_commands.is_none() {
-            config.enable_telegram_bot_commands = default.enable_telegram_bot_commands;
-        }
-        if config.retrieve_commands_interval.is_none() {
-            config.retrieve_commands_interval = default.retrieve_commands_interval;
-        }
-        if config.groups.is_none() {
-            config.groups = default.groups;
-        }
+        config.enable_telegram_bot_commands = config
+            .enable_telegram_bot_commands
+            .or_else(|| default.enable_telegram_bot_commands);
+        config.retrieve_commands_interval = config
+            .retrieve_commands_interval
+            .or_else(|| default.retrieve_commands_interval);
+        config.groups = config.groups.or_else(|| default.groups);
+
         // api
-        if config.api_host.is_none() {
-            config.api_host = default.api_host;
-        }
-        if config.api_port.is_none() {
-            config.api_port = default.api_port;
-        }
-        if config.api_token.is_none() {
-            config.api_token = default.api_token;
-        }
-        if config.enable_api.is_none() {
-            config.enable_api = default.enable_api;
-        }
-        return config;
+        config.api_host = config.api_host.or_else(|| default.api_host);
+        config.api_port = config.api_port.or_else(|| default.api_port);
+        config.api_token = config.api_token.or_else(|| default.api_token);
+        config.enable_api = config.enable_api.or_else(|| default.enable_api);
+
+        config
     }
 
     fn default() -> ConfigService {
         ConfigService {
             // service monitor
             enable_monitoring_service: Some(true),
+
             // telegram
-            enable_telegram_bot_commands: Some(true),
+            enable_telegram_bot_commands: Some(false),
             retrieve_commands_interval: Some(2),
             telegram_bot_token: None,
             groups: Some(Vec::new()),
+            telegram_api_url: Some("https://api.telegram.org".to_string()),
+
             // api
+            enable_api: Some(true),
             api_host: Some("0.0.0.0".to_string()),
             api_port: Some(5353),
-            api_token: Some("service_token".to_string()),
-            enable_api: Some(true),
+            api_token: None,
+
             // general
             api_tests: Some(Vec::new()),
             frontend_tests: Some(Vec::new()),
@@ -136,6 +125,11 @@ impl ConfigService {
             pause_reminder_interval: Some(86400),
             times_to_retry_after_error: Some(5),
         }
+    }
+
+    pub fn validate_configurations(&self) -> bool {
+        self.telegram_bot_token.is_some()
+            && (!self.enable_api.unwrap() || (self.enable_api.unwrap() && self.api_token.is_some()))
     }
 }
 
@@ -166,16 +160,19 @@ mod tests {
             website_monitoring_interval: None,
             pause_reminder_interval: None,
             times_to_retry_after_error: None,
+
             // telegram_service
             enable_telegram_bot_commands: None,
             retrieve_commands_interval: None,
             telegram_bot_token: Some("asdfasdf.asdfasdf".to_string()),
             groups: None,
+            telegram_api_url: Some("https://api.telegram.org".to_string()),
+
             // api
+            enable_api: None,
             api_host: None,
             api_port: None,
             api_token: None,
-            enable_api: None,
         };
 
         config = ConfigService::merge_configs_with_defalt(config);
@@ -196,7 +193,22 @@ mod tests {
         // api
         assert!(config.api_host.is_some());
         assert!(config.api_port.is_some());
-        assert!(config.api_token.is_some());
+        assert!(config.api_token.is_none());
         assert!(config.enable_api.is_some());
+    }
+
+    #[test]
+    fn validate_configurations_test() {
+        let mut config = ConfigService::default();
+
+        // default config (telegram_bot_token is None)
+        assert!(!config.validate_configurations());
+
+        // if enabled_api is set api_token must be set
+        config.telegram_bot_token = Some("asdfasdf.asdfasdf".to_string());
+        config.enable_api = Some(true);
+        assert!(!config.validate_configurations());
+
+        //
     }
 }
