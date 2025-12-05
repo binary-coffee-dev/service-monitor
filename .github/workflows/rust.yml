@@ -25,7 +25,7 @@ jobs:
   deploy:
 
     needs: [ build ]
-    if: endsWith('master', github.ref)
+    if: endsWith(github.ref, 'master')
 
     runs-on: ubuntu-latest
 
