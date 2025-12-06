@@ -142,7 +142,7 @@ impl TelegramService {
         let mut offset = 0;
         let limit = 100;
         loop {
-            let res = self.get_updates(limit, offset.clone()).await;
+            let res = self.get_updates(limit, offset).await;
             if let Some(mut update_res) = res {
                 if let Some(last) = update_res.result.last() {
                     offset = (last.update_id + 1) as usize;

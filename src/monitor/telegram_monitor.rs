@@ -47,8 +47,10 @@ impl TelegramMonitor {
                 drop(running);
             }
 
-            self.validator.lock().await.send_pending_messages().await;
-            let updates = self.validator.lock().await.get_all_updates().await;
+            let updates = {
+                self.validator.lock().await.send_pending_messages().await;
+                self.validator.lock().await.get_all_updates().await
+            };
             if !updates.is_empty() {
                 println!("--------------------");
                 println!("{:?}", updates);
