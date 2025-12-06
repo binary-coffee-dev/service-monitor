@@ -89,6 +89,9 @@ impl ConfigService {
             .retrieve_commands_interval
             .or_else(|| default.retrieve_commands_interval);
         config.groups = config.groups.or_else(|| default.groups);
+        config.telegram_api_url = config
+            .telegram_api_url
+            .or_else(|| default.telegram_api_url);
 
         // api
         config.api_host = config.api_host.or_else(|| default.api_host);
@@ -166,7 +169,7 @@ mod tests {
             retrieve_commands_interval: None,
             telegram_bot_token: Some("asdfasdf.asdfasdf".to_string()),
             groups: None,
-            telegram_api_url: Some("https://api.telegram.org".to_string()),
+            telegram_api_url: None,
 
             // api
             enable_api: None,
@@ -190,6 +193,7 @@ mod tests {
         assert!(config.retrieve_commands_interval.is_some());
         assert!(config.telegram_bot_token.is_some());
         assert!(config.groups.is_some());
+        assert!(config.telegram_api_url.is_some());
         // api
         assert!(config.api_host.is_some());
         assert!(config.api_port.is_some());
