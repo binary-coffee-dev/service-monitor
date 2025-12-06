@@ -58,7 +58,7 @@ impl TelegramService {
                 _ => {}
             }
         }
-        return None;
+        None
     }
 
     async fn retry_request(&mut self, req: &TelegramRequest) -> Result<reqwest::Response, String> {
@@ -134,7 +134,7 @@ impl TelegramService {
 
     async fn get_request(&self, url: String) -> Result<reqwest::Response, reqwest::Error> {
         let client = reqwest::Client::new();
-        return client.get(url.to_owned()).send().await;
+        client.get(url.to_owned()).send().await
     }
 
     pub async fn get_all_updates(&mut self) -> Vec<Update> {
@@ -142,7 +142,7 @@ impl TelegramService {
         let mut offset = 0;
         let limit = 100;
         loop {
-            let res = self.get_updates(limit, offset).await;
+            let res = self.get_updates(limit, offset.clone()).await;
             if let Some(mut update_res) = res {
                 if let Some(last) = update_res.result.last() {
                     offset = (last.update_id + 1) as usize;
@@ -152,7 +152,7 @@ impl TelegramService {
             }
             break;
         }
-        return updates_list;
+        updates_list
     }
 
     pub async fn send_pendings_messages(&mut self) {
@@ -272,6 +272,6 @@ impl TelegramService {
                 _ => {}
             }
         }
-        return Vec::new();
+        Vec::new()
     }
 }

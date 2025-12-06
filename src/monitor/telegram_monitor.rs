@@ -52,6 +52,7 @@ impl TelegramMonitor {
             if !updates.is_empty() {
                 println!("--------------------");
                 println!("{:?}", updates);
+                println!("--------------------");
             }
             for update in updates {
                 if let Some(msg) = update.message {

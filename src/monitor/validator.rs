@@ -49,6 +49,7 @@ impl Validator {
 
     pub async fn execute_check_api(&self, group_id: i64) {
         let errs = self.web.lock().await.api_vitality().await;
+        println!("Execute check api");
         self.handler_validation(
             errs,
             Some(

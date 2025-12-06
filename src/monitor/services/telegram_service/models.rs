@@ -1,29 +1,29 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct GetUpdatesRes {
     pub result: Vec<Update>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize,  Serialize, Debug, Clone)]
 pub struct Update {
     pub update_id: i64,
     pub message: Option<Message>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Message {
     pub chat: Chat,
     pub text: Option<String>,
     pub entities: Option<Vec<MessageEntity>>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Chat {
     pub id: i64,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct MessageEntity {
     #[serde(rename = "type")]
     pub type_value: String,
@@ -45,7 +45,7 @@ pub struct SetMyCommandsBody {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct GetMyCommandsRes {
-    ok: bool,
+    pub ok: bool,
     pub result: Vec<BotCommand>,
 }
 
